@@ -3,7 +3,12 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
+    // Load env from both .env and .env.local
     const env = loadEnv(mode, '.', '');
+    
+    // Get API key from multiple possible sources
+    const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+    
     return {
       server: {
         port: 3000,
@@ -11,13 +16,17 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.API_KEY': JSON.stringify(apiKey),
+        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
       },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        outDir: 'dist',
+        sourcemap: false
       }
     };
 });
