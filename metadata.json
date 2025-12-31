@@ -1,0 +1,8 @@
+{
+  "name": "GradIndStud - AI Student Job Portal",
+  "description": "A high-fidelity landing page for an AI-powered job matching portal specifically designed for Indian students to avoid ghost jobs and maximize ATS scores through AI powered",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
