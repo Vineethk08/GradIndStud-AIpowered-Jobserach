@@ -1,8 +1,9 @@
 {
-  "name": "GradIndStud - AI Student Job Portal",
-  "description": "A high-fidelity landing page for an AI-powered job matching portal specifically designed for Indian students to avoid ghost jobs and maximize ATS scores through AI powered",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
+  "name": "GradIndStud",
+  "description": "AI-Powered Job Search Portal for Indian Students - Solving ghost jobs and ATS rejection problems",
+  "version": "1.0.0",
+  "author": "Vineethk08",
+  "liveUrl": "https://gradindstud-aipowered-jobserach-457608791836.europe-west1.run.app",
+  "repository": "https://github.com/Vineethk08/GradIndStud-AIpowered-Jobserach",
+  "ai": "Google Gemini API"
 }
