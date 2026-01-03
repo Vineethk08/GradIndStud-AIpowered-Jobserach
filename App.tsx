@@ -53,7 +53,10 @@ import {
   IndianRupee,
   Mic,
   MicOff,
-  Volume2
+  Volume2,
+  Bell,
+  BellRing,
+  Trash2
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -177,7 +180,18 @@ const LEKI_CHAT_PROMPT = `You are LEKI, an AI career copilot at GRADINDSTUD. You
 Keep responses concise and actionable. Use a professional but friendly tone.`;
 
 // --- Types ---
-type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep' | 'company-insights';
+type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep' | 'company-insights' | 'notifications';
+
+// Notification types
+interface AppNotification {
+  id: string;
+  type: 'job_match' | 'application_update' | 'interview_reminder' | 'tip' | 'system';
+  title: string;
+  message: string;
+  timestamp: Date;
+  read: boolean;
+  actionUrl?: string;
+}
 
 interface SavedResume {
   id: string;
@@ -1465,6 +1479,9 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => setView('applications')} className="hover:text-black">Tracker</button>
           <button onClick={() => setView('interview-prep')} className="hover:text-black">Interview</button>
           <button onClick={() => setView('company-insights')} className="hover:text-black">Companies</button>
+          <button onClick={() => setView('notifications')} className="hover:text-black relative">
+            <Bell size={18} />
+          </button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1550,6 +1567,9 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => { setView('applications'); setMobileMenu(false); }} className="text-left">Tracker</button>
           <button onClick={() => { setView('interview-prep'); setMobileMenu(false); }} className="text-left">Interview</button>
           <button onClick={() => { setView('company-insights'); setMobileMenu(false); }} className="text-left">Companies</button>
+          <button onClick={() => { setView('notifications'); setMobileMenu(false); }} className="text-left flex items-center gap-2">
+            <Bell size={16} /> Notifications
+          </button>
           {user ? (
             <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
           ) : (
@@ -2464,6 +2484,330 @@ For customResume: Generate a well-formatted professional resume template optimiz
       </aside>
     </div>
     </>
+  );
+};
+
+// Notification Center Component
+const NotificationCenter = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [preferences, setPreferences] = useState({
+    jobMatches: true,
+    applicationUpdates: true,
+    interviewReminders: true,
+    tips: true
+  });
+
+  // Load notifications from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('app_notifications');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setNotifications(parsed.map((n: any) => ({
+        ...n,
+        timestamp: new Date(n.timestamp)
+      })));
+    } else {
+      // Add some sample notifications for demo
+      const sampleNotifications: AppNotification[] = [
+        {
+          id: '1',
+          type: 'job_match',
+          title: '🎯 New Job Match!',
+          message: 'Software Engineer at Google matches your profile. Apply now!',
+          timestamp: new Date(),
+          read: false
+        },
+        {
+          id: '2',
+          type: 'tip',
+          title: '💡 Career Tip',
+          message: 'Complete your resume analysis to improve your ATS score by 40%',
+          timestamp: new Date(Date.now() - 3600000),
+          read: false
+        },
+        {
+          id: '3',
+          type: 'interview_reminder',
+          title: '📅 Interview Preparation',
+          message: 'Practice behavioral questions for your upcoming interviews',
+          timestamp: new Date(Date.now() - 86400000),
+          read: true
+        }
+      ];
+      setNotifications(sampleNotifications);
+    }
+
+    // Check push notification status
+    if ('Notification' in window) {
+      setPushEnabled(Notification.permission === 'granted');
+    }
+  }, []);
+
+  // Save notifications to localStorage
+  useEffect(() => {
+    if (notifications.length > 0) {
+      localStorage.setItem('app_notifications', JSON.stringify(notifications));
+    }
+  }, [notifications]);
+
+  const requestPushPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('Push notifications are not supported in your browser');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setPushEnabled(permission === 'granted');
+
+    if (permission === 'granted') {
+      // Show a test notification
+      new Notification('🎉 Notifications Enabled!', {
+        body: 'You will now receive job alerts and updates',
+        icon: '/favicon.ico'
+      });
+      
+      // Add a notification to the in-app center
+      addNotification({
+        type: 'system',
+        title: '🔔 Notifications Enabled',
+        message: 'You will now receive push notifications for job matches and updates'
+      });
+    }
+  };
+
+  const addNotification = (notif: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => {
+    const newNotif: AppNotification = {
+      ...notif,
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      read: false
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => 
+      n.id === id ? { ...n, read: true } : n
+    ));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const deleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const clearAll = () => {
+    if (confirm('Clear all notifications?')) {
+      setNotifications([]);
+      localStorage.removeItem('app_notifications');
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const getNotificationIcon = (type: AppNotification['type']) => {
+    switch (type) {
+      case 'job_match': return '🎯';
+      case 'application_update': return '📋';
+      case 'interview_reminder': return '📅';
+      case 'tip': return '💡';
+      case 'system': return '🔔';
+      default: return '📌';
+    }
+  };
+
+  const getNotificationColor = (type: AppNotification['type']) => {
+    switch (type) {
+      case 'job_match': return 'bg-blue-50 border-blue-200';
+      case 'application_update': return 'bg-purple-50 border-purple-200';
+      case 'interview_reminder': return 'bg-orange-50 border-orange-200';
+      case 'tip': return 'bg-emerald-50 border-emerald-200';
+      case 'system': return 'bg-gray-50 border-gray-200';
+      default: return 'bg-gray-50 border-gray-200';
+    }
+  };
+
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  return (
+    <div className="min-h-screen bg-[#E9E1D1] pt-24 pb-12">
+      <div className="site-container max-w-4xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setView('job-portal')} className="p-2 hover:bg-white rounded-lg transition-all">
+              <ChevronLeft size={24} />
+            </button>
+            <div>
+              <h1 className="text-4xl font-heading flex items-center gap-3">
+                <span className="text-4xl">🔔</span> Notifications
+                {unreadCount > 0 && (
+                  <span className="px-3 py-1 bg-red-500 text-white text-sm rounded-full font-bold">
+                    {unreadCount} new
+                  </span>
+                )}
+              </h1>
+              <p className="text-[#3B4235]/60 text-sm">Stay updated on jobs and applications</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="px-4 py-2 bg-white border rounded-xl text-sm font-bold hover:bg-gray-50"
+              >
+                Mark all read
+              </button>
+            )}
+            {notifications.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="px-4 py-2 bg-white border rounded-xl text-sm font-bold hover:bg-gray-50 text-red-500"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Push Notification Banner */}
+        {!pushEnabled && (
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-6 mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <BellRing size={32} />
+              <div>
+                <h3 className="font-bold text-lg">Enable Push Notifications</h3>
+                <p className="text-white/80 text-sm">Get instant alerts for job matches and application updates</p>
+              </div>
+            </div>
+            <button
+              onClick={requestPushPermission}
+              className="px-6 py-3 bg-white text-blue-600 rounded-xl font-bold hover:bg-gray-100 transition-all"
+            >
+              Enable
+            </button>
+          </div>
+        )}
+
+        {/* Notification Preferences */}
+        <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6 mb-8">
+          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+            <Settings size={20} /> Notification Preferences
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {[
+              { key: 'jobMatches', label: '🎯 Job Matches', desc: 'New jobs matching your profile' },
+              { key: 'applicationUpdates', label: '📋 Application Updates', desc: 'Status changes on your applications' },
+              { key: 'interviewReminders', label: '📅 Interview Reminders', desc: 'Upcoming interview alerts' },
+              { key: 'tips', label: '💡 Career Tips', desc: 'Resume tips and career advice' }
+            ].map((pref) => (
+              <div key={pref.key} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div>
+                  <p className="font-bold text-sm">{pref.label}</p>
+                  <p className="text-xs text-gray-500">{pref.desc}</p>
+                </div>
+                <button
+                  onClick={() => setPreferences(prev => ({ ...prev, [pref.key]: !prev[pref.key as keyof typeof prev] }))}
+                  className={`w-12 h-6 rounded-full transition-all ${
+                    preferences[pref.key as keyof typeof preferences] ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full shadow transition-all ${
+                    preferences[pref.key as keyof typeof preferences] ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Notifications List */}
+        <div className="bg-white rounded-2xl border border-[#CBD0D2] overflow-hidden">
+          <div className="p-4 border-b bg-gray-50">
+            <h3 className="font-bold">Recent Notifications</h3>
+          </div>
+
+          {notifications.length === 0 ? (
+            <div className="p-12 text-center">
+              <Bell size={48} className="mx-auto mb-4 text-gray-300" />
+              <p className="font-bold text-gray-500 mb-2">No notifications yet</p>
+              <p className="text-sm text-gray-400">You'll see job matches and updates here</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {notifications.map((notif) => (
+                <div
+                  key={notif.id}
+                  className={`p-4 hover:bg-gray-50 transition-all ${!notif.read ? 'bg-blue-50/30' : ''}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${getNotificationColor(notif.type)}`}>
+                      {getNotificationIcon(notif.type)}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className={`font-bold ${!notif.read ? 'text-black' : 'text-gray-600'}`}>
+                            {notif.title}
+                            {!notif.read && (
+                              <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full inline-block"></span>
+                            )}
+                          </h4>
+                          <p className="text-sm text-gray-500 mt-1">{notif.message}</p>
+                        </div>
+                        <span className="text-xs text-gray-400">{formatTime(notif.timestamp)}</span>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        {!notif.read && (
+                          <button
+                            onClick={() => markAsRead(notif.id)}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Mark as read
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteNotification(notif.id)}
+                          className="text-xs text-red-500 hover:underline flex items-center gap-1"
+                        >
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Push Notification Status */}
+        {pushEnabled && (
+          <div className="mt-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3">
+            <CheckCircle2 size={20} className="text-emerald-600" />
+            <p className="text-sm text-emerald-700">
+              <span className="font-bold">Push notifications are enabled.</span> You'll receive alerts even when not on the site.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -5651,6 +5995,8 @@ export default function App() {
       {view === 'interview-prep' && <InterviewPrep setView={setView} />}
 
       {view === 'company-insights' && <CompanyInsights setView={setView} />}
+
+      {view === 'notifications' && <NotificationCenter setView={setView} user={user} />}
 
       {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       
