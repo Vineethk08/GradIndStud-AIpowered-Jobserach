@@ -6,8 +6,9 @@ export default defineConfig(({ mode }) => {
     // Load env from both .env and .env.local
     const env = loadEnv(mode, '.', '');
     
-    // Get API key from multiple possible sources
+    // Get API keys from multiple possible sources
     const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+    const rapidApiKey = env.RAPIDAPI_KEY || process.env.RAPIDAPI_KEY || '';
     
     return {
       server: {
@@ -17,7 +18,8 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(apiKey),
-        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey)
+        'process.env.GEMINI_API_KEY': JSON.stringify(apiKey),
+        'process.env.RAPIDAPI_KEY': JSON.stringify(rapidApiKey)
       },
       resolve: {
         alias: {

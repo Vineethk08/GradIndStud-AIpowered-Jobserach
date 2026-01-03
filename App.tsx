@@ -44,7 +44,13 @@ import {
   PlusCircle,
   Share2,
   ChevronDown,
-  LogOut
+  LogOut,
+  Key,
+  Globe,
+  Clock,
+  Calendar,
+  Shield,
+  IndianRupee
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -57,8 +63,15 @@ import {
   updateResume,
   deleteResume,
   setPrimaryResume,
-  StoredResume
+  StoredResume,
+  saveJobApplication,
+  getUserApplications,
+  updateJobApplication,
+  deleteJobApplication,
+  JobApplication,
+  ApplicationStatus
 } from './firebase';
+import { searchJobs, RealJob, JOB_CATEGORIES, hasJobApiKey, setJobApiKey } from './jobSearch';
 
 // --- AI Service Initialization ---
 let ai: InstanceType<typeof GoogleGenAI> | null = null;
@@ -161,7 +174,7 @@ const LEKI_CHAT_PROMPT = `You are LEKI, an AI career copilot at GRADINDSTUD. You
 Keep responses concise and actionable. Use a professional but friendly tone.`;
 
 // --- Types ---
-type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter';
+type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications';
 
 interface SavedResume {
   id: string;
@@ -1446,6 +1459,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => setView('resume-manager')} className="hover:text-black">My Resumes</button>
           <button onClick={() => setView('resume-builder')} className="hover:text-black">AI Optimizer</button>
           <button onClick={() => setView('cover-letter')} className="hover:text-black">Cover Letter</button>
+          <button onClick={() => setView('applications')} className="hover:text-black">Tracker</button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1528,6 +1542,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => { setView('resume-manager'); setMobileMenu(false); }} className="text-left">My Resumes</button>
           <button onClick={() => { setView('resume-builder'); setMobileMenu(false); }} className="text-left">AI Optimizer</button>
           <button onClick={() => { setView('cover-letter'); setMobileMenu(false); }} className="text-left">Cover Letter</button>
+          <button onClick={() => { setView('applications'); setMobileMenu(false); }} className="text-left">Tracker</button>
           {user ? (
             <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
           ) : (
@@ -1540,7 +1555,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
 };
 
 const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
-  const [activeTab, setActiveTab] = useState('Recommended');
+  const [activeTab, setActiveTab] = useState('Real Jobs');
   const [showFilters, setShowFilters] = useState(false);
   const [showAddExternal, setShowAddExternal] = useState(false);
   const [selectedExternalJob, setSelectedExternalJob] = useState<ExternalJob | null>(null);
@@ -1548,8 +1563,45 @@ const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: Fireb
   const [externalJobs, setExternalJobs] = useState<ExternalJob[]>([]);
   const { getJobs: getExternalJobs, addJob: addExternalJob, updateJob: updateExternalJob } = useExternalJobsStorage();
   
+  // Real Jobs State
+  const [realJobs, setRealJobs] = useState<RealJob[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(false);
+  const [jobSearchQuery, setJobSearchQuery] = useState('software engineer');
+  const [jobSearchLocation, setJobSearchLocation] = useState('India');
+  const [selectedRealJob, setSelectedRealJob] = useState<RealJob | null>(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  
+  const fetchRealJobs = async (query?: string, location?: string) => {
+    if (!hasJobApiKey()) {
+      setShowApiKeyModal(true);
+      return;
+    }
+    setIsLoadingJobs(true);
+    try {
+      const jobs = await searchJobs(query || jobSearchQuery, location || jobSearchLocation);
+      setRealJobs(jobs);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
+    } finally {
+      setIsLoadingJobs(false);
+    }
+  };
+
+  const handleSaveApiKey = () => {
+    if (apiKeyInput.trim()) {
+      setJobApiKey(apiKeyInput.trim());
+      setShowApiKeyModal(false);
+      fetchRealJobs();
+    }
+  };
+  
   useEffect(() => {
     setExternalJobs(getExternalJobs());
+    // Load real jobs on mount if API key exists
+    if (hasJobApiKey()) {
+      fetchRealJobs();
+    }
   }, []);
 
   const [filters, setFilters] = useState<JobFilters>({
@@ -1810,6 +1862,144 @@ For customResume: Generate a well-formatted professional resume template optimiz
         isAnalyzing={isAnalyzingJob}
       />
     )}
+
+    {/* API Key Modal */}
+    {showApiKeyModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2"><Key size={20} /> Add Job Search API Key</h2>
+            <button onClick={() => setShowApiKeyModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <X size={20} />
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm mb-4">
+            To search real jobs, you need a free API key from RapidAPI.
+          </p>
+          <ol className="text-sm text-gray-600 mb-4 space-y-2">
+            <li>1. Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" className="text-blue-600 underline">RapidAPI JSearch</a></li>
+            <li>2. Click "Subscribe to Test" (Free - 100 requests/month)</li>
+            <li>3. Copy your X-RapidAPI-Key</li>
+          </ol>
+          <input
+            type="text"
+            value={apiKeyInput}
+            onChange={(e) => setApiKeyInput(e.target.value)}
+            placeholder="Paste your RapidAPI key here"
+            className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none mb-4"
+          />
+          <div className="flex gap-3">
+            <button onClick={() => setShowApiKeyModal(false)} className="flex-1 py-3 border rounded-xl font-bold">Cancel</button>
+            <button onClick={handleSaveApiKey} className="flex-1 py-3 bg-black text-white rounded-xl font-bold">Save Key</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Real Job Detail Modal */}
+    {selectedRealJob && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b sticky top-0 bg-white rounded-t-2xl">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                {selectedRealJob.companyLogo ? (
+                  <img src={selectedRealJob.companyLogo} alt={selectedRealJob.company} className="w-16 h-16 rounded-xl object-contain bg-gray-100 p-2" />
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-2xl">
+                    {selectedRealJob.company.charAt(0)}
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedRealJob.title}</h2>
+                  <p className="text-gray-600 flex items-center gap-2 mt-1">
+                    <Briefcase size={16} /> {selectedRealJob.company}
+                    <span className="text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1">
+                      <Shield size={10} /> Verified
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedRealJob(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            {/* Job Details */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm">
+                <MapPin size={16} /> {selectedRealJob.location}
+              </span>
+              {selectedRealJob.isRemote && (
+                <span className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-xl text-sm font-bold">
+                  <Globe size={16} /> Remote
+                </span>
+              )}
+              <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm">
+                <Clock size={16} /> {selectedRealJob.type}
+              </span>
+              {selectedRealJob.salary && (
+                <span className="flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-sm font-bold">
+                  <IndianRupee size={16} /> {selectedRealJob.salary}
+                </span>
+              )}
+              <span className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-xl text-sm">
+                <Calendar size={16} /> {selectedRealJob.postedAt}
+              </span>
+            </div>
+
+            {/* Description */}
+            <div className="mb-6">
+              <h3 className="font-bold mb-3">Job Description</h3>
+              <div className="prose prose-sm max-w-none text-gray-600 whitespace-pre-line">
+                {selectedRealJob.description}
+              </div>
+            </div>
+
+            {/* Source */}
+            <div className="text-sm text-gray-400 mb-6">
+              Source: {selectedRealJob.source}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <a
+                href={selectedRealJob.applyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 py-4 bg-black text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 hover:bg-[#3B4235]"
+              >
+                <ExternalLink size={18} /> Apply on {selectedRealJob.source}
+              </a>
+              <button
+                onClick={() => {
+                  // Add to tracker
+                  if (user) {
+                    saveJobApplication(user.uid, {
+                      jobTitle: selectedRealJob.title,
+                      company: selectedRealJob.company,
+                      location: selectedRealJob.location,
+                      salary: selectedRealJob.salary || '',
+                      jobUrl: selectedRealJob.applyUrl,
+                      status: 'saved',
+                      notes: `Found via ${selectedRealJob.source}`
+                    });
+                    alert('Job saved to tracker!');
+                  } else {
+                    setView('login');
+                  }
+                }}
+                className="px-6 py-4 border-2 border-black rounded-xl font-bold flex items-center gap-2 hover:bg-gray-50"
+              >
+                <Heart size={18} /> Save to Tracker
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     
     <div className="flex h-screen bg-[#E9E1D1] overflow-hidden">
       {/* LEFT SIDEBAR NAVIGATION */}
@@ -1856,9 +2046,8 @@ For customResume: Generate a well-formatted professional resume template optimiz
               </div>
               <div className="flex bg-white/40 p-1.5 rounded-2xl border border-[#CBD0D2]">
                 {[
+                  { id: 'Real Jobs', count: realJobs.length },
                   { id: 'Recommended', count: null },
-                  { id: 'Liked', count: 0 },
-                  { id: 'Applied', count: 0 },
                   { id: 'External', count: externalJobs.length }
                 ].map((tab) => (
                   <button
@@ -1918,6 +2107,136 @@ For customResume: Generate a well-formatted professional resume template optimiz
         </header>
 
         <section className="px-10 py-4 space-y-6 max-w-5xl">
+          {/* Real Jobs Tab Content */}
+          {activeTab === 'Real Jobs' && (
+            <div className="space-y-6">
+              {/* Search Bar */}
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Job Title / Keywords</label>
+                    <input
+                      type="text"
+                      value={jobSearchQuery}
+                      onChange={(e) => setJobSearchQuery(e.target.value)}
+                      placeholder="e.g., Software Engineer, Data Scientist"
+                      className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={jobSearchLocation}
+                      onChange={(e) => setJobSearchLocation(e.target.value)}
+                      placeholder="e.g., India, Bangalore, Remote"
+                      className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                    />
+                  </div>
+                  <button
+                    onClick={() => fetchRealJobs()}
+                    disabled={isLoadingJobs}
+                    className="px-8 py-3 bg-black text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#3B4235] disabled:opacity-50"
+                  >
+                    {isLoadingJobs ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+                    Search Jobs
+                  </button>
+                </div>
+
+                {/* Quick Categories */}
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-xs font-bold text-gray-500 mb-2">Quick Search:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {JOB_CATEGORIES.slice(0, 8).map((cat) => (
+                      <button
+                        key={cat.name}
+                        onClick={() => {
+                          setJobSearchQuery(cat.query);
+                          fetchRealJobs(cat.query);
+                        }}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold transition-all"
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Results */}
+              {isLoadingJobs ? (
+                <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
+                  <Loader2 size={40} className="animate-spin mx-auto mb-4 text-gray-400" />
+                  <p className="font-bold text-gray-500">Searching real jobs...</p>
+                  <p className="text-sm text-gray-400">Fetching from LinkedIn, Indeed, and more</p>
+                </div>
+              ) : realJobs.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
+                  <Briefcase size={48} className="mx-auto mb-4 text-gray-300" />
+                  <p className="font-bold text-gray-500 mb-2">No jobs found</p>
+                  <p className="text-sm text-gray-400 mb-4">
+                    {hasJobApiKey() 
+                      ? 'Try a different search query or location' 
+                      : 'Add your RapidAPI key to search real jobs'}
+                  </p>
+                  {!hasJobApiKey() && (
+                    <button
+                      onClick={() => setShowApiKeyModal(true)}
+                      className="px-6 py-3 bg-black text-white rounded-xl font-bold"
+                    >
+                      Add API Key
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm font-bold text-gray-500">{realJobs.length} real jobs found</p>
+                  {realJobs.map((job) => (
+                    <div
+                      key={job.id}
+                      onClick={() => setSelectedRealJob(job)}
+                      className="bg-white rounded-2xl border border-[#CBD0D2] p-6 hover:border-black hover:shadow-lg transition-all cursor-pointer"
+                    >
+                      <div className="flex items-start gap-4">
+                        {job.companyLogo ? (
+                          <img src={job.companyLogo} alt={job.company} className="w-14 h-14 rounded-xl object-contain bg-gray-100 p-2" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-xl">
+                            {job.company.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-bold text-lg hover:text-blue-600">{job.title}</h3>
+                              <p className="text-gray-600 flex items-center gap-2">
+                                <Briefcase size={14} /> {job.company}
+                                <span className="text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                  <Shield size={10} /> Verified
+                                </span>
+                              </p>
+                            </div>
+                            <span className="text-xs text-gray-400">{job.postedAt}</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-gray-500">
+                            <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>
+                            {job.isRemote && <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">Remote</span>}
+                            <span className="flex items-center gap-1"><Clock size={14} /> {job.type}</span>
+                            {job.salary && <span className="flex items-center gap-1 text-emerald-600 font-bold"><IndianRupee size={14} /> {job.salary}</span>}
+                          </div>
+                          <p className="text-sm text-gray-400 mt-3 line-clamp-2">{job.description.slice(0, 200)}...</p>
+                          <div className="flex items-center gap-2 mt-4">
+                            <span className="text-xs text-gray-400">Source: {job.source}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* External Jobs Tab Content */}
           {activeTab === 'External' && (
             <div className="space-y-6">
@@ -2138,6 +2457,407 @@ For customResume: Generate a well-formatted professional resume template optimiz
       </aside>
     </div>
     </>
+  );
+};
+
+// Application Tracker Component
+const ApplicationTracker = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingApp, setEditingApp] = useState<JobApplication | null>(null);
+  const [filter, setFilter] = useState<ApplicationStatus | 'all'>('all');
+
+  // Form state
+  const [formData, setFormData] = useState({
+    jobTitle: '',
+    company: '',
+    location: '',
+    salary: '',
+    jobUrl: '',
+    status: 'saved' as ApplicationStatus,
+    notes: '',
+    appliedDate: ''
+  });
+
+  const loadApplications = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const apps = await getUserApplications(user.uid);
+      setApplications(apps);
+    } catch (error) {
+      console.error('Error loading applications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadApplications();
+  }, [user]);
+
+  const resetForm = () => {
+    setFormData({
+      jobTitle: '',
+      company: '',
+      location: '',
+      salary: '',
+      jobUrl: '',
+      status: 'saved',
+      notes: '',
+      appliedDate: ''
+    });
+    setEditingApp(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!user || !formData.jobTitle || !formData.company) {
+      alert('Please fill in job title and company');
+      return;
+    }
+
+    try {
+      if (editingApp) {
+        await updateJobApplication(editingApp.id, {
+          ...formData,
+          appliedDate: formData.appliedDate ? new Date(formData.appliedDate) : undefined
+        });
+      } else {
+        await saveJobApplication(user.uid, {
+          ...formData,
+          appliedDate: formData.appliedDate ? new Date(formData.appliedDate) : undefined
+        });
+      }
+      setShowAddModal(false);
+      resetForm();
+      await loadApplications();
+    } catch (error) {
+      console.error('Error saving application:', error);
+      alert('Failed to save. Please try again.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this application?')) return;
+    try {
+      await deleteJobApplication(id);
+      await loadApplications();
+    } catch (error) {
+      console.error('Error deleting:', error);
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: ApplicationStatus) => {
+    try {
+      await updateJobApplication(id, { status: newStatus });
+      await loadApplications();
+    } catch (error) {
+      console.error('Error updating status:', error);
+    }
+  };
+
+  const openEditModal = (app: JobApplication) => {
+    setFormData({
+      jobTitle: app.jobTitle,
+      company: app.company,
+      location: app.location,
+      salary: app.salary || '',
+      jobUrl: app.jobUrl || '',
+      status: app.status,
+      notes: app.notes,
+      appliedDate: app.appliedDate ? app.appliedDate.toISOString().split('T')[0] : ''
+    });
+    setEditingApp(app);
+    setShowAddModal(true);
+  };
+
+  const filteredApps = filter === 'all' ? applications : applications.filter(a => a.status === filter);
+
+  const statusColors: Record<ApplicationStatus, string> = {
+    saved: 'bg-gray-100 text-gray-700',
+    applied: 'bg-blue-100 text-blue-700',
+    interviewing: 'bg-purple-100 text-purple-700',
+    offer: 'bg-emerald-100 text-emerald-700',
+    rejected: 'bg-red-100 text-red-700'
+  };
+
+  const statusIcons: Record<ApplicationStatus, React.ReactNode> = {
+    saved: <Heart size={14} />,
+    applied: <Send size={14} />,
+    interviewing: <MessageSquare size={14} />,
+    offer: <CheckCircle2 size={14} />,
+    rejected: <X size={14} />
+  };
+
+  const stats = {
+    total: applications.length,
+    saved: applications.filter(a => a.status === 'saved').length,
+    applied: applications.filter(a => a.status === 'applied').length,
+    interviewing: applications.filter(a => a.status === 'interviewing').length,
+    offers: applications.filter(a => a.status === 'offer').length,
+    rejected: applications.filter(a => a.status === 'rejected').length
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#E9E1D1] pt-24 pb-12 flex items-center justify-center">
+        <div className="text-center">
+          <Lock size={48} className="mx-auto mb-4 text-gray-400" />
+          <h2 className="text-2xl font-bold mb-2">Login Required</h2>
+          <p className="text-gray-600 mb-4">Please sign in to track your job applications</p>
+          <button onClick={() => setView('login')} className="px-6 py-3 bg-black text-white rounded-xl font-bold">
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#E9E1D1] pt-24 pb-12">
+      <div className="site-container max-w-6xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setView('job-portal')} className="p-2 hover:bg-white rounded-lg transition-all">
+              <ChevronLeft size={24} />
+            </button>
+            <div>
+              <h1 className="text-4xl font-heading">Application Tracker</h1>
+              <p className="text-[#3B4235]/60 text-sm">Track all your job applications in one place</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { resetForm(); setShowAddModal(true); }}
+            className="px-6 py-3 bg-black text-white rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-[#3B4235] transition-all"
+          >
+            <Plus size={18} /> Add Application
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+          {[
+            { label: 'Total', value: stats.total, color: 'bg-black text-white' },
+            { label: 'Saved', value: stats.saved, color: 'bg-gray-100' },
+            { label: 'Applied', value: stats.applied, color: 'bg-blue-100' },
+            { label: 'Interviewing', value: stats.interviewing, color: 'bg-purple-100' },
+            { label: 'Offers', value: stats.offers, color: 'bg-emerald-100' },
+            { label: 'Rejected', value: stats.rejected, color: 'bg-red-100' }
+          ].map((stat, i) => (
+            <div key={i} className={`${stat.color} rounded-xl p-4 text-center`}>
+              <p className="text-3xl font-black">{stat.value}</p>
+              <p className="text-xs font-bold uppercase tracking-wider opacity-70">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+          {(['all', 'saved', 'applied', 'interviewing', 'offer', 'rejected'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold capitalize whitespace-nowrap transition-all ${
+                filter === status ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {status === 'all' ? 'All' : status}
+            </button>
+          ))}
+        </div>
+
+        {/* Applications List */}
+        <div className="bg-white rounded-2xl shadow-xl border border-[#CBD0D2] overflow-hidden">
+          {isLoading ? (
+            <div className="p-12 text-center">
+              <Loader2 size={32} className="animate-spin mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-500">Loading applications...</p>
+            </div>
+          ) : filteredApps.length === 0 ? (
+            <div className="p-12 text-center">
+              <Briefcase size={48} className="mx-auto mb-4 text-gray-300" />
+              <p className="font-bold text-gray-500 mb-2">No applications yet</p>
+              <p className="text-sm text-gray-400 mb-4">Start tracking your job search journey</p>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-3 bg-black text-white rounded-xl font-bold text-sm"
+              >
+                Add Your First Application
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {filteredApps.map((app) => (
+                <div key={app.id} className="p-6 hover:bg-gray-50 transition-all">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-bold text-lg">{app.jobTitle}</h3>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${statusColors[app.status]}`}>
+                          {statusIcons[app.status]} {app.status}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 flex items-center gap-2 mb-1">
+                        <Briefcase size={14} /> {app.company}
+                      </p>
+                      {app.location && (
+                        <p className="text-gray-500 text-sm flex items-center gap-2">
+                          <MapPin size={14} /> {app.location}
+                        </p>
+                      )}
+                      {app.notes && (
+                        <p className="text-gray-400 text-sm mt-2 italic">"{app.notes}"</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={app.status}
+                        onChange={(e) => handleStatusChange(app.id, e.target.value as ApplicationStatus)}
+                        className="text-sm border rounded-lg px-3 py-2 bg-white"
+                      >
+                        <option value="saved">Saved</option>
+                        <option value="applied">Applied</option>
+                        <option value="interviewing">Interviewing</option>
+                        <option value="offer">Offer</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                      <button onClick={() => openEditModal(app)} className="p-2 hover:bg-gray-200 rounded-lg">
+                        <Settings size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(app.id)} className="p-2 hover:bg-red-100 text-red-500 rounded-lg">
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex items-center justify-between">
+              <h2 className="text-xl font-bold">{editingApp ? 'Edit Application' : 'Add Application'}</h2>
+              <button onClick={() => { setShowAddModal(false); resetForm(); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Job Title *</label>
+                <input
+                  type="text"
+                  value={formData.jobTitle}
+                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                  placeholder="Software Engineer"
+                  className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Company *</label>
+                <input
+                  type="text"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="Google"
+                  className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="San Francisco, CA"
+                    className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Salary</label>
+                  <input
+                    type="text"
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    placeholder="$120K - $150K"
+                    className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Job URL</label>
+                <input
+                  type="url"
+                  value={formData.jobUrl}
+                  onChange={(e) => setFormData({ ...formData, jobUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as ApplicationStatus })}
+                    className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                  >
+                    <option value="saved">Saved</option>
+                    <option value="applied">Applied</option>
+                    <option value="interviewing">Interviewing</option>
+                    <option value="offer">Offer</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Applied Date</label>
+                  <input
+                    type="date"
+                    value={formData.appliedDate}
+                    onChange={(e) => setFormData({ ...formData, appliedDate: e.target.value })}
+                    className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Notes</label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Any notes about this application..."
+                  rows={3}
+                  className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={() => { setShowAddModal(false); resetForm(); }}
+                className="flex-1 py-3 border rounded-xl font-bold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="flex-1 py-3 bg-black text-white rounded-xl font-bold hover:bg-[#3B4235]"
+              >
+                {editingApp ? 'Save Changes' : 'Add Application'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -3884,6 +4604,8 @@ export default function App() {
       {view === 'resume-builder' && <ResumeBuilder />}
 
       {view === 'cover-letter' && <CoverLetterGenerator setView={setView} />}
+
+      {view === 'applications' && <ApplicationTracker setView={setView} user={user} />}
 
       {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       

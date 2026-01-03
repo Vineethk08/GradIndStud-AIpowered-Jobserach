@@ -163,5 +163,108 @@ export const setPrimaryResume = async (userId: string, resumeId: string) => {
   }
 };
 
+// ============ JOB APPLICATION TRACKER ============
+
+export type ApplicationStatus = 'saved' | 'applied' | 'interviewing' | 'offer' | 'rejected';
+
+export interface JobApplication {
+  id: string;
+  userId: string;
+  jobTitle: string;
+  company: string;
+  location: string;
+  salary?: string;
+  jobUrl?: string;
+  status: ApplicationStatus;
+  notes: string;
+  appliedDate?: Date;
+  interviewDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Save a new job application
+export const saveJobApplication = async (userId: string, application: Omit<JobApplication, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+  try {
+    const appRef = doc(collection(db, 'applications'));
+    const now = new Date();
+    const appData: JobApplication = {
+      ...application,
+      id: appRef.id,
+      userId,
+      createdAt: now,
+      updatedAt: now
+    };
+    await setDoc(appRef, {
+      ...appData,
+      appliedDate: application.appliedDate ? Timestamp.fromDate(application.appliedDate) : null,
+      interviewDate: application.interviewDate ? Timestamp.fromDate(application.interviewDate) : null,
+      createdAt: Timestamp.fromDate(now),
+      updatedAt: Timestamp.fromDate(now)
+    });
+    return appData;
+  } catch (error) {
+    console.error("Error saving application:", error);
+    throw error;
+  }
+};
+
+// Get all applications for a user
+export const getUserApplications = async (userId: string): Promise<JobApplication[]> => {
+  try {
+    const q = query(
+      collection(db, 'applications'),
+      where('userId', '==', userId),
+      orderBy('updatedAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        ...data,
+        id: doc.id,
+        appliedDate: data.appliedDate?.toDate() || null,
+        interviewDate: data.interviewDate?.toDate() || null,
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
+      } as JobApplication;
+    });
+  } catch (error) {
+    console.error("Error getting applications:", error);
+    return [];
+  }
+};
+
+// Update an application
+export const updateJobApplication = async (appId: string, updates: Partial<JobApplication>) => {
+  try {
+    const appRef = doc(db, 'applications', appId);
+    const updateData: any = {
+      ...updates,
+      updatedAt: Timestamp.fromDate(new Date())
+    };
+    if (updates.appliedDate) {
+      updateData.appliedDate = Timestamp.fromDate(updates.appliedDate);
+    }
+    if (updates.interviewDate) {
+      updateData.interviewDate = Timestamp.fromDate(updates.interviewDate);
+    }
+    await updateDoc(appRef, updateData);
+  } catch (error) {
+    console.error("Error updating application:", error);
+    throw error;
+  }
+};
+
+// Delete an application
+export const deleteJobApplication = async (appId: string) => {
+  try {
+    await deleteDoc(doc(db, 'applications', appId));
+  } catch (error) {
+    console.error("Error deleting application:", error);
+    throw error;
+  }
+};
+
 export { auth, db };
 export type { User };
