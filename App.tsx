@@ -170,9 +170,40 @@ You MUST output valid JSON in this exact structure:
   "full_optimized_resume": "FULL TEXT OF THE OPTIMIZED RESUME HERE - ready to copy"
 }`;
 
-const LEKI_CHAT_PROMPT = `You are LEKI, an AI career copilot at GRADINDSTUD. You help Indian students and professionals land high-growth global roles. You are warm, strategic, and direct. You specialize in:
-- Resume optimization and ATS compliance
-- Interview preparation and coaching  
+const LEKI_CHAT_PROMPT = `You are LEKI, a Personal AI Career Agent at GRADINDSTUD. You're warm, strategic, and incredibly helpful. You specialize in:
+
+## YOUR CAPABILITIES:
+1. **Personalized Resume Generation**: Create tailored resumes for specific job postings
+2. **Cover Letter Writing**: Write compelling, job-specific cover letters
+3. **Job Match Analysis**: Analyze how well a candidate matches a job description
+4. **Interview Coaching**: Provide role-specific interview questions and answers
+5. **Career Advice**: Offer strategic career guidance for Indian professionals
+
+## WHEN GENERATING RESUMES:
+- Ask for: Job description, candidate's background/experience, key skills
+- Use the XYZ formula: "Accomplished [X] as measured by [Y] by doing [Z]"
+- Make it ATS-compliant with relevant keywords from the job description
+- Format clearly with sections: Summary, Experience, Skills, Education
+- Quantify achievements with numbers whenever possible
+
+## WHEN WRITING COVER LETTERS:
+- Ask for: Job title, company name, key qualifications to highlight
+- Structure: Opening hook → Why this role/company → What you offer → Call to action
+- Keep it to 3-4 paragraphs, professional but personable
+- Reference specific company values or recent news if known
+
+## WHEN ANALYZING JOB MATCH:
+- Compare skills, experience, and qualifications
+- Give a match percentage (0-100%)
+- List matching skills and missing skills
+- Provide specific suggestions to improve candidacy
+
+## ALWAYS:
+- Be encouraging and supportive
+- Give specific, actionable advice
+- Use clear formatting (bullets, sections)
+- Focus on Indian job market context when relevant
+- Never hallucinate experience - only use what the user provides  
 - Job search strategy for tech roles
 - Career growth strategies for Indian professionals
 - Skill gap analysis
@@ -1764,8 +1795,9 @@ For customResume: Generate a well-formatted professional resume template optimiz
     });
   }, [filters, mockJobs]);
 
-  const handleAiChat = async () => {
-    if (!chatInput) return;
+  const handleAiChat = async (directPrompt?: string) => {
+    const prompt = directPrompt || chatInput;
+    if (!prompt) return;
     if (!ai) {
       setAiResponse("AI service not configured. Please add your GEMINI_API_KEY to .env file.");
       return;
@@ -1774,7 +1806,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-2.0-flash',
-        contents: chatInput,
+        contents: prompt,
         config: {
           systemInstruction: LEKI_CHAT_PROMPT
         }
@@ -2368,53 +2400,97 @@ For customResume: Generate a well-formatted professional resume template optimiz
 
       {/* RIGHT LEKI AI COPILOT PANEL */}
       <aside className="w-96 bg-white border-l border-[#CBD0D2] flex flex-col z-10 shadow-2xl">
-        <header className="p-8 border-b border-[#CBD0D2] flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <header className="p-6 border-b border-[#CBD0D2] flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-[#3B4235] rounded-2xl flex items-center justify-center text-white shadow-lg">
                <Rocket size={24} className="text-emerald-400" />
             </div>
             <div>
               <h4 className="font-black text-lg uppercase tracking-tight">Leki</h4>
-              <p className="text-[10px] font-black text-[#CBD0D2] uppercase tracking-widest">Leki Agent Copilot</p>
+              <p className="text-[10px] font-black text-[#CBD0D2] uppercase tracking-widest">Personal AI Agent</p>
             </div>
           </div>
-          <button className="px-4 py-1.5 border-2 border-black text-black text-[10px] font-black rounded-full uppercase tracking-widest hover:bg-black hover:text-white transition-all">Quick Guide</button>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-[#E9E1D1]/10">
-          <div className="bg-white p-6 rounded-[2rem] text-sm font-medium leading-relaxed text-[#3B4235] shadow-sm border border-[#CBD0D2]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#E9E1D1]/10">
+          {/* LEKI Response */}
+          <div className="bg-white p-4 rounded-2xl text-sm font-medium leading-relaxed text-[#3B4235] shadow-sm border border-[#CBD0D2]">
              {aiResponse}
           </div>
 
-          <div className="bg-[#3B4235] p-6 rounded-[2rem] text-sm font-black text-white leading-relaxed shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-3xl rounded-full translate-x-12 -translate-y-12" />
-            "What's the hardest technical challenge you solved? Or failed to solve?"
+          {/* Quick Actions */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-black text-[#CBD0D2] uppercase tracking-widest px-2">Quick Actions</p>
+            {[
+              { 
+                text: '📝 Generate Resume for a Job',
+                prompt: 'I want to generate a personalized resume. Please ask me about the job I am applying for and my background, then create an ATS-optimized resume tailored to that role.',
+                color: 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+              },
+              { 
+                text: '✉️ Write Cover Letter',
+                prompt: 'Help me write a professional cover letter. Ask me about the job title, company, and my key qualifications, then generate a compelling cover letter.',
+                color: 'bg-purple-50 border-purple-200 hover:bg-purple-100'
+              },
+              { 
+                text: '🎯 Analyze Job Match',
+                prompt: 'Analyze how well I match a job. Please ask me to paste the job description and tell you about my experience, then give me a match score and tips.',
+                color: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+              },
+              { 
+                text: '💡 Interview Tips',
+                prompt: 'Give me interview preparation tips. Ask me what role I am interviewing for and provide specific behavioral and technical questions with sample answers.',
+                color: 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+              },
+              { 
+                text: '📊 Improve My Resume',
+                prompt: 'I want to improve my resume. Please ask me to paste my current resume, then analyze it and suggest specific improvements for ATS optimization.',
+                color: 'bg-pink-50 border-pink-200 hover:bg-pink-100'
+              }
+            ].map((action, i) => (
+              <button
+                key={i}
+                onClick={() => handleAiChat(action.prompt)}
+                disabled={isAiLoading}
+                className={`w-full p-3 border rounded-xl text-left text-sm font-medium transition-all ${action.color}`}
+              >
+                {action.text}
+              </button>
+            ))}
           </div>
 
-          <div className="space-y-4">
-            <p className="text-[10px] font-black text-[#CBD0D2] uppercase tracking-widest pl-2">Interview Prep Logic</p>
-            <div className="bg-white/50 p-6 rounded-[2rem] text-xs font-medium text-[#3B4235]/60 leading-relaxed border border-[#CBD0D2]">
-              Are you preparing for an interview and looking for advice on how to answer the question? Please clarify so I can provide the most relevant guidance.
-            </div>
+          {/* Tips */}
+          <div className="bg-gradient-to-br from-[#3B4235] to-[#2a3027] p-4 rounded-2xl text-white space-y-2">
+            <p className="text-xs font-bold opacity-60">💡 PRO TIP</p>
+            <p className="text-sm leading-relaxed">
+              Paste a job description below and I'll create a personalized resume and cover letter tailored specifically for that role!
+            </p>
           </div>
         </div>
 
-        <div className="p-6 bg-white border-t border-[#CBD0D2]">
+        <div className="p-4 bg-white border-t border-[#CBD0D2]">
           <div className="relative">
             <textarea 
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Ask me anything..."
-              className="w-full pl-6 pr-16 py-5 bg-[#E9E1D1]/20 border border-[#CBD0D2] rounded-[2rem] text-sm font-bold resize-none outline-none focus:border-black transition-all min-h-[100px]"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleAiChat();
+                }
+              }}
+              placeholder="Paste job description or ask anything..."
+              className="w-full pl-4 pr-14 py-4 bg-[#E9E1D1]/20 border border-[#CBD0D2] rounded-2xl text-sm font-medium resize-none outline-none focus:border-black transition-all min-h-[80px]"
             />
             <button 
               onClick={handleAiChat}
-              disabled={isAiLoading}
-              className="absolute right-4 bottom-4 w-10 h-10 bg-black text-white rounded-full flex items-center justify-center hover:bg-[#3B4235] transition-all disabled:opacity-50"
+              disabled={isAiLoading || !chatInput.trim()}
+              className="absolute right-3 bottom-3 w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center hover:bg-[#3B4235] transition-all disabled:opacity-50"
             >
               {isAiLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>
           </div>
+          <p className="text-[10px] text-gray-400 mt-2 text-center">Press Enter to send • Shift+Enter for new line</p>
         </div>
       </aside>
     </div>
