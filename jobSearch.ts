@@ -16,14 +16,17 @@ export interface RealJob {
   source: string;
 }
 
+// Default API key (free tier - 100 requests/month)
+const DEFAULT_RAPIDAPI_KEY = '97cb26c9demshed15b897142702bp16047cjsncaf9fac0c25d';
+
 // Get API key from environment or localStorage
 const getApiKey = (): string => {
   // Check localStorage first (for runtime config)
   const storedKey = localStorage.getItem('rapidapi_key');
   if (storedKey) return storedKey;
   
-  // Fall back to env variable
-  return process.env.RAPIDAPI_KEY || '';
+  // Fall back to env variable, then default key
+  return process.env.RAPIDAPI_KEY || DEFAULT_RAPIDAPI_KEY;
 };
 
 // Set API key (for runtime config)
