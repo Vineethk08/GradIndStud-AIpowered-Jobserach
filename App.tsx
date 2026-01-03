@@ -43,9 +43,11 @@ import {
   Send,
   PlusCircle,
   Share2,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { signInWithGoogle, logOut, onAuthChange, User as FirebaseUser } from './firebase';
 
 // --- AI Service Initialization ---
 let ai: InstanceType<typeof GoogleGenAI> | null = null;
@@ -1404,9 +1406,10 @@ const SidebarItem = ({ icon: Icon, label, active = false, badge = null, onClick 
   </button>
 );
 
-const Navbar = ({ setView, currentView }: { setView: (v: View) => void, currentView: View }) => {
+const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) => void, currentView: View, user?: FirebaseUser | null, onLogout?: () => void }) => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -1432,10 +1435,58 @@ const Navbar = ({ setView, currentView }: { setView: (v: View) => void, currentV
           <button onClick={() => setView('resume-manager')} className="hover:text-black">My Resumes</button>
           <button onClick={() => setView('resume-builder')} className="hover:text-black">AI Optimizer</button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
-          <button onClick={() => setView('login')} className="hover:text-black">Login</button>
-          <button onClick={() => setView('job-portal')} className="bg-black text-white px-8 py-3 hover:bg-[#3B4235] transition-all rounded-xl">
-            Dashboard
-          </button>
+          
+          {user ? (
+            <div className="relative">
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)} 
+                className="flex items-center gap-3 hover:bg-gray-100 px-3 py-2 rounded-xl transition-all"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || ''} className="w-8 h-8 rounded-full border-2 border-emerald-500" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+                    {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                  </div>
+                )}
+                <span className="text-[10px] normal-case">{user.displayName?.split(' ')[0] || 'User'}</span>
+                <ChevronDown size={14} />
+              </button>
+              
+              {showUserMenu && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="font-bold text-sm normal-case">{user.displayName}</p>
+                    <p className="text-xs text-gray-500 normal-case">{user.email}</p>
+                  </div>
+                  <button onClick={() => { setView('job-portal'); setShowUserMenu(false); }} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 normal-case text-sm">
+                    <Briefcase size={16} /> Dashboard
+                  </button>
+                  <button onClick={() => { setView('resume-manager'); setShowUserMenu(false); }} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 normal-case text-sm">
+                    <FileText size={16} /> My Resumes
+                  </button>
+                  <button onClick={() => { setView('resume-builder'); setShowUserMenu(false); }} className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 normal-case text-sm">
+                    <Sparkles size={16} /> AI Optimizer
+                  </button>
+                  <div className="border-t border-gray-100 mt-2 pt-2">
+                    <button 
+                      onClick={() => { onLogout?.(); setShowUserMenu(false); }} 
+                      className="w-full px-4 py-3 text-left hover:bg-red-50 text-red-600 flex items-center gap-3 normal-case text-sm"
+                    >
+                      <LogOut size={16} /> Sign Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <button onClick={() => setView('login')} className="hover:text-black">Login</button>
+              <button onClick={() => setView('login')} className="bg-black text-white px-8 py-3 hover:bg-[#3B4235] transition-all rounded-xl">
+                Get Started
+              </button>
+            </>
+          )}
         </div>
 
         <button className="lg:hidden text-black" onClick={() => setMobileMenu(!mobileMenu)}>
@@ -1445,19 +1496,37 @@ const Navbar = ({ setView, currentView }: { setView: (v: View) => void, currentV
 
       {mobileMenu && (
         <div className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-[#CBD0D2] p-8 flex flex-col gap-6 font-bold uppercase tracking-widest text-sm shadow-xl">
+          {user && (
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || ''} className="w-10 h-10 rounded-full" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+                  {user.displayName?.charAt(0) || 'U'}
+                </div>
+              )}
+              <div>
+                <p className="font-bold normal-case">{user.displayName}</p>
+                <p className="text-xs text-gray-500 normal-case font-normal">{user.email}</p>
+              </div>
+            </div>
+          )}
           <button onClick={() => { setView('landing'); setMobileMenu(false); }} className="text-left">Home</button>
           <button onClick={() => { setView('job-portal'); setMobileMenu(false); }} className="text-left">Job Matches</button>
           <button onClick={() => { setView('resume-manager'); setMobileMenu(false); }} className="text-left">My Resumes</button>
           <button onClick={() => { setView('resume-builder'); setMobileMenu(false); }} className="text-left">AI Optimizer</button>
-          <button onClick={() => { setView('login'); setMobileMenu(false); }} className="text-left">Login</button>
-          <button onClick={() => { setView('job-portal'); setMobileMenu(false); }} className="w-full bg-black text-white py-4">Dashboard</button>
+          {user ? (
+            <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
+          ) : (
+            <button onClick={() => { setView('login'); setMobileMenu(false); }} className="w-full bg-black text-white py-4 rounded-xl">Login</button>
+          )}
         </div>
       )}
     </nav>
   );
 };
 
-const JobPortal = ({ setView }: { setView: (v: View) => void }) => {
+const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
   const [activeTab, setActiveTab] = useState('Recommended');
   const [showFilters, setShowFilters] = useState(false);
   const [showAddExternal, setShowAddExternal] = useState(false);
@@ -2059,32 +2128,24 @@ For customResume: Generate a well-formatted professional resume template optimiz
   );
 };
 
-const LoginPage = ({ setView }: { setView: (v: View) => void }) => {
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
+const LoginPage = ({ setView, onLoginSuccess }: { setView: (v: View) => void; onLoginSuccess?: () => void }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setIsLoggingIn(true);
-    setTimeout(() => {
+    setError('');
+    try {
+      await signInWithGoogle();
+      if (onLoginSuccess) onLoginSuccess();
       setView('job-portal');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to sign in. Please try again.');
+    } finally {
       setIsLoggingIn(false);
-    }, 1500);
+    }
   };
-
-  const passwordStrength = useMemo(() => {
-    if (!password) return { score: 0, label: '', color: 'bg-transparent' };
-    let score = 0;
-    if (password.length >= 6) score += 1;
-    if (password.length >= 10) score += 1;
-    if (/[0-9]/.test(password)) score += 1;
-    if (/[^A-Za-z0-9]/.test(password)) score += 1;
-
-    if (score <= 1) return { score: 33, label: 'Weak', color: 'bg-red-500' };
-    if (score <= 3) return { score: 66, label: 'Fair', color: 'bg-orange-400' };
-    return { score: 100, label: 'Strong', color: 'bg-emerald-500' };
-  }, [password]);
 
   return (
     <div className="min-h-screen pt-32 pb-20 flex items-center justify-center bg-[#E9E1D1]">
@@ -2115,47 +2176,51 @@ const LoginPage = ({ setView }: { setView: (v: View) => void }) => {
             <p className="text-[#3B4235]/60 font-bold uppercase tracking-widest text-[10px]">Welcome to the inner circle.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-8">
-            <div className="grid grid-cols-2 gap-4">
-              <button type="button" onClick={() => setView('job-portal')} className="flex items-center justify-center gap-3 p-5 border border-[#CBD0D2] font-black text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-all rounded-xl">
-                <Linkedin size={18} /> LinkedIn
-              </button>
-              <button type="button" onClick={() => setView('job-portal')} className="flex items-center justify-center gap-3 p-5 border border-[#CBD0D2] font-black text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-all rounded-xl">
-                <Github size={18} /> Github
-              </button>
-            </div>
+          <div className="space-y-8">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Google Sign-In Button */}
+            <button 
+              onClick={handleGoogleLogin} 
+              disabled={isLoggingIn}
+              className="w-full flex items-center justify-center gap-4 p-5 bg-white border-2 border-[#CBD0D2] font-bold text-sm hover:bg-gray-50 hover:border-black transition-all rounded-xl shadow-lg disabled:opacity-50"
+            >
+              {isLoggingIn ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+              )}
+              <span className="text-[#3B4235]">
+                {isLoggingIn ? 'Signing in...' : 'Continue with Google'}
+              </span>
+            </button>
 
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-[#CBD0D2]"></div>
-              <span className="flex-shrink mx-6 text-[9px] font-black uppercase tracking-[0.3em] text-[#CBD0D2]">Secure Gateway</span>
+              <span className="flex-shrink mx-6 text-[9px] font-black uppercase tracking-[0.3em] text-[#CBD0D2]">Secure & Fast</span>
               <div className="flex-grow border-t border-[#CBD0D2]"></div>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#3B4235]">Authentication Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-[#CBD0D2]" size={18} />
-                  <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@college.edu.in" className="w-full pl-14 pr-6 py-5 bg-[#E9E1D1]/10 border border-[#CBD0D2] focus:border-black outline-none transition-all rounded-xl font-bold text-sm" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-[#3B4235]">Secure Password</label>
-                  <button type="button" className="text-[9px] font-black uppercase tracking-widest text-black/40 hover:text-black underline">Reset Key</button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-[#CBD0D2]" size={18} />
-                  <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-14 pr-6 py-5 bg-[#E9E1D1]/10 border border-[#CBD0D2] focus:border-black outline-none transition-all rounded-xl font-bold text-sm" />
-                </div>
+            <div className="text-center space-y-4">
+              <p className="text-xs text-[#3B4235]/60">
+                By signing in, you agree to our Terms of Service and Privacy Policy.
+              </p>
+              <div className="flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-widest text-[#3B4235]/40">
+                <span className="flex items-center gap-2"><ShieldCheck size={14} /> Secure</span>
+                <span className="flex items-center gap-2"><Zap size={14} /> Fast</span>
+                <span className="flex items-center gap-2"><Lock size={14} /> Private</span>
               </div>
             </div>
-
-            <button type="submit" disabled={isLoggingIn} className="w-full bg-black text-white py-6 font-black uppercase tracking-[0.3em] text-[11px] hover:bg-[#3B4235] transition-all flex items-center justify-center gap-4 rounded-xl shadow-2xl">
-              {isLoggingIn ? <Loader2 size={18} className="animate-spin" /> : null}
-              {isLoggingIn ? 'Establishing Link...' : 'Enter Platform'}
-            </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>
@@ -3423,14 +3488,30 @@ const FuturisticAgent = () => (
 
 export default function App() {
   const [view, setView] = useState<View>('landing');
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange((firebaseUser) => {
+      setUser(firebaseUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [view]);
 
+  const handleLogout = async () => {
+    await logOut();
+    setView('landing');
+  };
+
   return (
     <div className="min-h-screen">
-      <Navbar setView={setView} currentView={view} />
+      <Navbar setView={setView} currentView={view} user={user} onLogout={handleLogout} />
       
       {view === 'landing' && (
         <>
@@ -3449,7 +3530,7 @@ export default function App() {
       
       {view === 'resume-builder' && <ResumeBuilder />}
 
-      {view === 'job-portal' && <JobPortal setView={setView} />}
+      {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       
       {view !== 'job-portal' && <Footer />}
     </div>
