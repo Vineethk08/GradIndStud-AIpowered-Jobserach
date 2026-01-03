@@ -3114,20 +3114,22 @@ const CompanyInsights = ({ setView }: { setView: (v: View) => void }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  // Popular companies for quick access
+  // Popular companies with real logos (using Clearbit Logo API)
+  const getCompanyLogo = (company: string) => `https://logo.clearbit.com/${company.toLowerCase().replace(/\s+/g, '')}.com`;
+  
   const popularCompanies = [
-    { name: 'Google', logo: '🔵', industry: 'Technology' },
-    { name: 'Microsoft', logo: '🟦', industry: 'Technology' },
-    { name: 'Amazon', logo: '🟠', industry: 'E-commerce' },
-    { name: 'Apple', logo: '🍎', industry: 'Technology' },
-    { name: 'Meta', logo: '🔷', industry: 'Social Media' },
-    { name: 'Netflix', logo: '🔴', industry: 'Entertainment' },
-    { name: 'Infosys', logo: '🟢', industry: 'IT Services' },
-    { name: 'TCS', logo: '🔵', industry: 'IT Services' },
-    { name: 'Wipro', logo: '🟣', industry: 'IT Services' },
-    { name: 'Flipkart', logo: '🟡', industry: 'E-commerce' },
-    { name: 'Razorpay', logo: '🔵', industry: 'Fintech' },
-    { name: 'Swiggy', logo: '🟠', industry: 'Food Tech' }
+    { name: 'Google', domain: 'google.com', industry: 'Technology' },
+    { name: 'Microsoft', domain: 'microsoft.com', industry: 'Technology' },
+    { name: 'Amazon', domain: 'amazon.com', industry: 'E-commerce' },
+    { name: 'Apple', domain: 'apple.com', industry: 'Technology' },
+    { name: 'Meta', domain: 'meta.com', industry: 'Social Media' },
+    { name: 'Netflix', domain: 'netflix.com', industry: 'Entertainment' },
+    { name: 'Salesforce', domain: 'salesforce.com', industry: 'Enterprise' },
+    { name: 'Adobe', domain: 'adobe.com', industry: 'Creative' },
+    { name: 'Uber', domain: 'uber.com', industry: 'Transportation' },
+    { name: 'Stripe', domain: 'stripe.com', industry: 'Fintech' },
+    { name: 'Airbnb', domain: 'airbnb.com', industry: 'Travel' },
+    { name: 'LinkedIn', domain: 'linkedin.com', industry: 'Professional' }
   ];
 
   const searchCompany = async (companyName: string) => {
@@ -3143,36 +3145,74 @@ const CompanyInsights = ({ setView }: { setView: (v: View) => void }) => {
     });
 
     try {
-      const prompt = `You are a career research expert. Provide detailed insights about "${companyName}" as a potential employer. 
+      const prompt = `You are an expert career researcher with access to Glassdoor, LinkedIn, and Levels.fyi data. Provide ACCURATE, UP-TO-DATE information about "${companyName}" as a potential employer.
+
+IMPORTANT: Use REAL data based on 2024/2025 information. Be specific and accurate.
 
 Return a JSON object with this exact structure:
 {
   "name": "${companyName}",
-  "overview": "2-3 sentence company description",
+  "domain": "company-domain.com",
+  "overview": "3-4 sentence accurate company description including founding story and mission",
   "industry": "Primary industry",
-  "founded": "Year founded",
-  "headquarters": "HQ location",
-  "employees": "Employee count range",
-  "rating": <number 1-5>,
-  "salaryRange": {
-    "entry": "Entry level salary range in INR LPA",
-    "mid": "Mid level salary range in INR LPA", 
-    "senior": "Senior level salary range in INR LPA"
+  "founded": "Year founded (exact year)",
+  "headquarters": "City, State/Country",
+  "employees": "Exact employee count or range (e.g., 150,000+)",
+  "stockTicker": "Stock symbol if public, or 'Private'",
+  "revenue": "Annual revenue estimate",
+  "rating": <number 3.0-5.0 based on Glassdoor>,
+  "salaryRanges": {
+    "softwareEngineer": {
+      "entry": "$XX,XXX - $XX,XXX",
+      "mid": "$XXX,XXX - $XXX,XXX",
+      "senior": "$XXX,XXX - $XXX,XXX",
+      "staff": "$XXX,XXX - $XXX,XXX"
+    },
+    "productManager": {
+      "entry": "$XX,XXX - $XX,XXX",
+      "senior": "$XXX,XXX - $XXX,XXX"
+    },
+    "dataScientist": {
+      "entry": "$XX,XXX - $XX,XXX",
+      "senior": "$XXX,XXX - $XXX,XXX"
+    }
   },
+  "totalCompensation": "Description of total comp (base + stock + bonus)",
   "culture": {
     "workLifeBalance": <1-5>,
-    "growth": <1-5>,
+    "careerGrowth": <1-5>,
     "compensation": <1-5>,
     "management": <1-5>,
-    "diversity": <1-5>
+    "diversity": <1-5>,
+    "workFromHome": <1-5>
   },
-  "pros": ["pro1", "pro2", "pro3", "pro4"],
-  "cons": ["con1", "con2", "con3"],
-  "interviewProcess": ["step1", "step2", "step3", "step4"],
-  "interviewTips": ["tip1", "tip2", "tip3"],
-  "techStack": ["tech1", "tech2", "tech3", "tech4"],
-  "famousFor": "What the company is known for",
-  "competitors": ["competitor1", "competitor2", "competitor3"]
+  "coreValues": ["value1 - brief description", "value2 - brief description", "value3 - brief description"],
+  "leadershipPrinciples": ["principle1: explanation", "principle2: explanation"],
+  "whatTheyLookFor": ["trait1", "trait2", "trait3", "trait4"],
+  "pros": ["specific pro 1", "specific pro 2", "specific pro 3", "specific pro 4"],
+  "cons": ["specific con 1", "specific con 2", "specific con 3"],
+  "interviewStages": [
+    {"stage": 1, "name": "Application & Resume Screen", "duration": "1-2 weeks", "description": "HR reviews resume"},
+    {"stage": 2, "name": "Recruiter Call", "duration": "30 mins", "description": "Initial phone screen"},
+    {"stage": 3, "name": "Technical Screen", "duration": "45-60 mins", "description": "Coding or technical assessment"},
+    {"stage": 4, "name": "Onsite/Virtual Loop", "duration": "4-5 hours", "description": "Multiple rounds with different interviewers"},
+    {"stage": 5, "name": "Team Matching", "duration": "1-2 weeks", "description": "Final team placement discussions"},
+    {"stage": 6, "name": "Offer", "duration": "1 week", "description": "Compensation negotiation"}
+  ],
+  "interviewFocus": {
+    "behavioral": ["question type 1", "question type 2"],
+    "technical": ["topic 1", "topic 2", "topic 3"],
+    "systemDesign": ["topic 1", "topic 2"]
+  },
+  "interviewTips": ["specific tip 1", "specific tip 2", "specific tip 3", "specific tip 4"],
+  "commonQuestions": ["actual question 1", "actual question 2", "actual question 3"],
+  "techStack": ["tech1", "tech2", "tech3", "tech4", "tech5"],
+  "famousFor": "What the company is specifically known for",
+  "recentNews": "One recent notable news item about the company",
+  "competitors": ["competitor1", "competitor2", "competitor3"],
+  "difficultyLevel": "Easy/Medium/Hard based on interview difficulty",
+  "acceptanceRate": "Approximate offer rate percentage",
+  "averageTimeToHire": "X weeks average"
 }`;
 
       const response = await ai.models.generateContent({
@@ -3293,32 +3333,75 @@ Return a JSON object with this exact structure:
         {/* Company Details */}
         {companyData && !isLoading && (
           <div className="space-y-6">
-            {/* Company Header */}
+            {/* Company Header with Real Logo */}
             <div className="bg-white rounded-2xl border border-[#CBD0D2] p-8">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-black">
-                    {companyData.name?.charAt(0)}
-                  </div>
+                  <img 
+                    src={`https://logo.clearbit.com/${companyData.domain || companyData.name?.toLowerCase().replace(/\s+/g, '') + '.com'}`}
+                    alt={companyData.name}
+                    className="w-20 h-20 rounded-2xl object-contain bg-white border p-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${companyData.name}&size=80&background=random`;
+                    }}
+                  />
                   <div>
-                    <h2 className="text-3xl font-bold">{companyData.name}</h2>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-3xl font-bold">{companyData.name}</h2>
+                      {companyData.stockTicker && companyData.stockTicker !== 'Private' && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded">{companyData.stockTicker}</span>
+                      )}
+                    </div>
                     <p className="text-gray-500 flex items-center gap-2 mt-1">
                       <Briefcase size={16} /> {companyData.industry} • {companyData.headquarters}
                     </p>
-                    <div className="flex items-center gap-4 mt-3">
+                    <div className="flex items-center gap-4 mt-3 flex-wrap">
                       <div className="flex items-center gap-1">
                         {renderStars(companyData.rating || 4)}
-                        <span className="font-bold ml-1">{companyData.rating || 4.0}</span>
+                        <span className="font-bold ml-1">{companyData.rating?.toFixed(1) || '4.0'}</span>
+                        <span className="text-xs text-gray-400">(Glassdoor)</span>
                       </div>
                       <span className="text-gray-400">|</span>
                       <span className="text-sm text-gray-500">{companyData.employees} employees</span>
                       <span className="text-gray-400">|</span>
                       <span className="text-sm text-gray-500">Founded {companyData.founded}</span>
+                      {companyData.revenue && (
+                        <>
+                          <span className="text-gray-400">|</span>
+                          <span className="text-sm text-emerald-600 font-bold">{companyData.revenue}</span>
+                        </>
+                      )}
                     </div>
+                    {/* Interview Difficulty */}
+                    {companyData.difficultyLevel && (
+                      <div className="flex items-center gap-3 mt-3">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          companyData.difficultyLevel === 'Hard' ? 'bg-red-100 text-red-700' :
+                          companyData.difficultyLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
+                          {companyData.difficultyLevel} Interview
+                        </span>
+                        {companyData.acceptanceRate && (
+                          <span className="text-xs text-gray-500">~{companyData.acceptanceRate} acceptance rate</span>
+                        )}
+                        {companyData.averageTimeToHire && (
+                          <span className="text-xs text-gray-500">• {companyData.averageTimeToHire} avg hiring time</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               <p className="mt-6 text-gray-600 leading-relaxed">{companyData.overview}</p>
+              
+              {/* Recent News */}
+              {companyData.recentNews && (
+                <div className="mt-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <p className="text-sm"><span className="font-bold">📰 Recent:</span> {companyData.recentNews}</p>
+                </div>
+              )}
+              
               {companyData.famousFor && (
                 <div className="mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <p className="text-sm"><span className="font-bold">🌟 Known for:</span> {companyData.famousFor}</p>
@@ -3326,27 +3409,180 @@ Return a JSON object with this exact structure:
               )}
             </div>
 
-            {/* Salary & Culture Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Salary Ranges */}
+            {/* Core Values & Leadership Principles */}
+            {(companyData.coreValues || companyData.leadershipPrinciples) && (
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border border-purple-200 p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  🎯 Core Values & What They Look For
+                </h3>
+                {companyData.coreValues && (
+                  <div className="grid md:grid-cols-3 gap-3 mb-4">
+                    {companyData.coreValues.map((value: string, i: number) => (
+                      <div key={i} className="bg-white p-3 rounded-xl text-sm">
+                        <span className="font-bold text-purple-700">{i+1}.</span> {value}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {companyData.whatTheyLookFor && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {companyData.whatTheyLookFor.map((trait: string, i: number) => (
+                      <span key={i} className="px-3 py-1 bg-white border border-purple-200 rounded-full text-xs font-bold text-purple-700">
+                        ✓ {trait}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Interview Stages - Visual Pipeline */}
+            {companyData.interviewStages && (
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-6 flex items-center gap-2">
+                  📋 Interview Process ({companyData.interviewStages.length} Stages)
+                </h3>
+                <div className="relative">
+                  {/* Progress Line */}
+                  <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gray-200"></div>
+                  
+                  <div className="space-y-6">
+                    {companyData.interviewStages.map((stage: any, i: number) => (
+                      <div key={i} className="flex gap-4 relative">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 z-10 ${
+                          i === 0 ? 'bg-blue-500' :
+                          i === companyData.interviewStages.length - 1 ? 'bg-emerald-500' :
+                          'bg-gray-400'
+                        }`}>
+                          {stage.stage || i + 1}
+                        </div>
+                        <div className="flex-1 bg-gray-50 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-bold">{stage.name}</h4>
+                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded">{stage.duration}</span>
+                          </div>
+                          <p className="text-sm text-gray-600">{stage.description}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Interview Focus Areas */}
+            {companyData.interviewFocus && (
+              <div className="grid md:grid-cols-3 gap-4">
+                {companyData.interviewFocus.behavioral && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-2xl p-5">
+                    <h4 className="font-bold text-orange-700 mb-3">🧠 Behavioral</h4>
+                    <ul className="space-y-2">
+                      {companyData.interviewFocus.behavioral.map((item: string, i: number) => (
+                        <li key={i} className="text-sm text-orange-600">• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {companyData.interviewFocus.technical && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+                    <h4 className="font-bold text-blue-700 mb-3">💻 Technical</h4>
+                    <ul className="space-y-2">
+                      {companyData.interviewFocus.technical.map((item: string, i: number) => (
+                        <li key={i} className="text-sm text-blue-600">• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {companyData.interviewFocus.systemDesign && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-2xl p-5">
+                    <h4 className="font-bold text-purple-700 mb-3">🏗️ System Design</h4>
+                    <ul className="space-y-2">
+                      {companyData.interviewFocus.systemDesign.map((item: string, i: number) => (
+                        <li key={i} className="text-sm text-purple-600">• {item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Common Questions */}
+            {companyData.commonQuestions && (
               <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                  <IndianRupee size={20} /> Salary Ranges (LPA)
+                  ❓ Common Interview Questions at {companyData.name}
                 </h3>
-                <div className="space-y-4">
-                  {[
-                    { level: 'Entry Level', range: companyData.salaryRange?.entry, color: 'bg-blue-100 text-blue-700' },
-                    { level: 'Mid Level', range: companyData.salaryRange?.mid, color: 'bg-purple-100 text-purple-700' },
-                    { level: 'Senior Level', range: companyData.salaryRange?.senior, color: 'bg-emerald-100 text-emerald-700' }
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <span className="font-medium">{item.level}</span>
-                      <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.color}`}>
-                        ₹ {item.range || 'N/A'}
-                      </span>
+                <div className="space-y-3">
+                  {companyData.commonQuestions.map((q: string, i: number) => (
+                    <div key={i} className="p-4 bg-gray-50 rounded-xl flex items-start gap-3">
+                      <span className="w-6 h-6 bg-black text-white rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">{i+1}</span>
+                      <p className="text-sm font-medium">{q}</p>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Salary & Culture Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Salary Ranges - By Role */}
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                  💰 Salary Ranges (Total Comp)
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">Based on levels.fyi & Glassdoor data</p>
+                
+                {companyData.salaryRanges?.softwareEngineer && (
+                  <div className="mb-4">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Software Engineer</p>
+                    <div className="space-y-2">
+                      {Object.entries(companyData.salaryRanges.softwareEngineer).map(([level, range]: [string, any]) => (
+                        <div key={level} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm capitalize">{level}</span>
+                          <span className="text-sm font-bold text-emerald-600">{range}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {companyData.salaryRanges?.productManager && (
+                  <div className="mb-4">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Product Manager</p>
+                    <div className="space-y-2">
+                      {Object.entries(companyData.salaryRanges.productManager).map(([level, range]: [string, any]) => (
+                        <div key={level} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <span className="text-sm capitalize">{level}</span>
+                          <span className="text-sm font-bold text-blue-600">{range}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {companyData.totalCompensation && (
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-700"><span className="font-bold">💡 Total Comp:</span> {companyData.totalCompensation}</p>
+                  </div>
+                )}
+                
+                {/* Fallback for old format */}
+                {!companyData.salaryRanges && companyData.salaryRange && (
+                  <div className="space-y-3">
+                    {[
+                      { level: 'Entry Level', range: companyData.salaryRange?.entry, color: 'bg-blue-100 text-blue-700' },
+                      { level: 'Mid Level', range: companyData.salaryRange?.mid, color: 'bg-purple-100 text-purple-700' },
+                      { level: 'Senior Level', range: companyData.salaryRange?.senior, color: 'bg-emerald-100 text-emerald-700' }
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                        <span className="font-medium">{item.level}</span>
+                        <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.color}`}>
+                          {item.range || 'N/A'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Culture Ratings */}
@@ -3468,15 +3704,22 @@ Return a JSON object with this exact structure:
         {/* Popular Companies (shown when no company selected) */}
         {!selectedCompany && !isLoading && (
           <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
-            <h3 className="font-bold text-lg mb-4">🔥 Popular Companies</h3>
+            <h3 className="font-bold text-lg mb-4">🔥 Top Tech Companies</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {popularCompanies.map((company) => (
                 <button
                   key={company.name}
                   onClick={() => searchCompany(company.name)}
-                  className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-all group"
+                  className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-all group border border-transparent hover:border-blue-200"
                 >
-                  <div className="text-3xl mb-2">{company.logo}</div>
+                  <img 
+                    src={`https://logo.clearbit.com/${company.domain}`}
+                    alt={company.name}
+                    className="w-12 h-12 rounded-lg object-contain bg-white mb-3"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${company.name}&size=48&background=random`;
+                    }}
+                  />
                   <p className="font-bold group-hover:text-blue-600 transition-all">{company.name}</p>
                   <p className="text-xs text-gray-500">{company.industry}</p>
                 </button>
