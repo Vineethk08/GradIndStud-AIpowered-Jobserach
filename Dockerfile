@@ -13,11 +13,13 @@ RUN npm ci
 # Copy all source files
 COPY . .
 
-# Accept the API key as a build argument
+# Accept API keys as build arguments
 ARG GEMINI_API_KEY
+ARG RAPIDAPI_KEY
 
-# Write the API key to .env.local before building
-RUN echo "GEMINI_API_KEY=${GEMINI_API_KEY}" > .env.local
+# Write API keys to .env.local before building (Vite needs these at build time)
+RUN echo "GEMINI_API_KEY=${GEMINI_API_KEY}" > .env.local && \
+    echo "RAPIDAPI_KEY=${RAPIDAPI_KEY}" >> .env.local
 
 # Build the React app for production
 RUN npm run build
