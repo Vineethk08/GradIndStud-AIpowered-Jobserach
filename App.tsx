@@ -47,7 +47,18 @@ import {
   LogOut
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
-import { signInWithGoogle, logOut, onAuthChange, User as FirebaseUser } from './firebase';
+import { 
+  signInWithGoogle, 
+  logOut, 
+  onAuthChange, 
+  User as FirebaseUser,
+  saveResume,
+  getUserResumes,
+  updateResume,
+  deleteResume,
+  setPrimaryResume,
+  StoredResume
+} from './firebase';
 
 // --- AI Service Initialization ---
 let ai: InstanceType<typeof GoogleGenAI> | null = null;
@@ -150,7 +161,7 @@ const LEKI_CHAT_PROMPT = `You are LEKI, an AI career copilot at GRADINDSTUD. You
 Keep responses concise and actionable. Use a professional but friendly tone.`;
 
 // --- Types ---
-type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal';
+type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter';
 
 interface SavedResume {
   id: string;
@@ -1434,6 +1445,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => setView('job-portal')} className="hover:text-black">Job Matches</button>
           <button onClick={() => setView('resume-manager')} className="hover:text-black">My Resumes</button>
           <button onClick={() => setView('resume-builder')} className="hover:text-black">AI Optimizer</button>
+          <button onClick={() => setView('cover-letter')} className="hover:text-black">Cover Letter</button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1481,10 +1493,10 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
             </div>
           ) : (
             <>
-              <button onClick={() => setView('login')} className="hover:text-black">Login</button>
+          <button onClick={() => setView('login')} className="hover:text-black">Login</button>
               <button onClick={() => setView('login')} className="bg-black text-white px-8 py-3 hover:bg-[#3B4235] transition-all rounded-xl">
                 Get Started
-              </button>
+          </button>
             </>
           )}
         </div>
@@ -1515,6 +1527,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => { setView('job-portal'); setMobileMenu(false); }} className="text-left">Job Matches</button>
           <button onClick={() => { setView('resume-manager'); setMobileMenu(false); }} className="text-left">My Resumes</button>
           <button onClick={() => { setView('resume-builder'); setMobileMenu(false); }} className="text-left">AI Optimizer</button>
+          <button onClick={() => { setView('cover-letter'); setMobileMenu(false); }} className="text-left">Cover Letter</button>
           {user ? (
             <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
           ) : (
@@ -1930,7 +1943,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
                     className="px-6 py-3 bg-black text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-[#3B4235] transition-all"
                   >
                     Add Your First Job
-                  </button>
+              </button>
                 </div>
               ) : (
                 externalJobs.map((job) => (
@@ -1967,7 +1980,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
                             className="px-4 py-2 bg-[#E9E1D1] text-[#3B4235] rounded-xl text-xs font-black uppercase hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
                           >
                             <Sparkles size={14} /> Analyze
-                          </button>
+            </button>
                         )}
                         <button className="px-4 py-2 bg-black text-white rounded-xl text-xs font-black uppercase hover:bg-[#3B4235] transition-all">
                           Custom Resume
@@ -1981,7 +1994,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
                         >
                           Apply
                         </a>
-                      </div>
+          </div>
                     </div>
                   </div>
                 ))
@@ -2128,6 +2141,268 @@ For customResume: Generate a well-formatted professional resume template optimiz
   );
 };
 
+// Cover Letter Generator Component
+const CoverLetterGenerator = ({ setView }: { setView: (v: View) => void }) => {
+  const [jobTitle, setJobTitle] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
+  const [yourBackground, setYourBackground] = useState('');
+  const [tone, setTone] = useState<'professional' | 'enthusiastic' | 'conversational'>('professional');
+  const [generatedLetter, setGeneratedLetter] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const generateCoverLetter = async () => {
+    if (!ai) {
+      alert('AI service not configured. Please add your GEMINI_API_KEY.');
+      return;
+    }
+
+    if (!jobTitle || !companyName || !jobDescription) {
+      alert('Please fill in the job title, company name, and job description.');
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const prompt = `Generate a professional cover letter for the following job application.
+
+Job Title: ${jobTitle}
+Company: ${companyName}
+Job Description:
+${jobDescription}
+
+Candidate Background:
+${yourBackground || 'Fresh graduate with relevant skills and enthusiasm to learn.'}
+
+Tone: ${tone}
+
+Requirements:
+1. Keep it concise (250-350 words)
+2. Use a ${tone} tone
+3. Highlight relevant skills that match the job description
+4. Show enthusiasm for the company and role
+5. Include a strong opening and closing
+6. Do NOT use placeholder text like [Your Name] - write it ready to use
+7. Make it ATS-friendly
+8. No generic phrases - be specific to this role
+
+Generate ONLY the cover letter text, ready to copy and use.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt
+      });
+
+      const text = response.text || "";
+      setGeneratedLetter(text);
+    } catch (error) {
+      console.error('Error generating cover letter:', error);
+      alert('Failed to generate cover letter. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(generatedLetter);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const downloadAsTxt = () => {
+    const blob = new Blob([generatedLetter], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Cover_Letter_${companyName.replace(/\s+/g, '_')}.txt`;
+    a.click();
+  };
+
+  return (
+    <div className="min-h-screen bg-[#E9E1D1] pt-24 pb-12">
+      <div className="site-container max-w-6xl">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button onClick={() => setView('job-portal')} className="p-2 hover:bg-white rounded-lg transition-all">
+            <ChevronLeft size={24} />
+          </button>
+          <div>
+            <h1 className="text-4xl font-heading">Cover Letter Generator</h1>
+            <p className="text-[#3B4235]/60 text-sm">Create AI-powered, tailored cover letters in seconds</p>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Input Form */}
+          <div className="bg-white rounded-2xl p-8 shadow-xl border border-[#CBD0D2]">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <FileText size={20} className="text-emerald-500" />
+              Job Details
+            </h2>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#3B4235] mb-2">
+                    Job Title *
+                  </label>
+                  <input
+                    type="text"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="Software Engineer"
+                    className="w-full px-4 py-3 border border-[#CBD0D2] rounded-xl focus:border-emerald-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-widest text-[#3B4235] mb-2">
+                    Company Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Google"
+                    className="w-full px-4 py-3 border border-[#CBD0D2] rounded-xl focus:border-emerald-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#3B4235] mb-2">
+                  Job Description *
+                </label>
+                <textarea
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the job description here..."
+                  rows={6}
+                  className="w-full px-4 py-3 border border-[#CBD0D2] rounded-xl focus:border-emerald-500 outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#3B4235] mb-2">
+                  Your Background (Optional)
+                </label>
+                <textarea
+                  value={yourBackground}
+                  onChange={(e) => setYourBackground(e.target.value)}
+                  placeholder="Brief summary of your experience, skills, and achievements..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-[#CBD0D2] rounded-xl focus:border-emerald-500 outline-none resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest text-[#3B4235] mb-2">
+                  Tone
+                </label>
+                <div className="flex gap-3">
+                  {(['professional', 'enthusiastic', 'conversational'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTone(t)}
+                      className={`px-4 py-2 rounded-lg text-sm font-bold capitalize transition-all ${
+                        tone === t 
+                          ? 'bg-emerald-500 text-white' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={generateCoverLetter}
+                disabled={isGenerating}
+                className="w-full bg-black text-white py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-[#3B4235] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={20} />
+                    Generate Cover Letter
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Output */}
+          <div className="bg-white rounded-2xl p-8 shadow-xl border border-[#CBD0D2]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Mail size={20} className="text-emerald-500" />
+                Your Cover Letter
+              </h2>
+              {generatedLetter && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyToClipboard}
+                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                    title="Copy to clipboard"
+                  >
+                    {copied ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Share2 size={18} />}
+                  </button>
+                  <button
+                    onClick={downloadAsTxt}
+                    className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                    title="Download as text"
+                  >
+                    <FileText size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {generatedLetter ? (
+              <div className="bg-[#FAFAFA] rounded-xl p-6 border border-[#E5E5E5] min-h-[400px]">
+                <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-[#3B4235]">
+                  {generatedLetter}
+                </pre>
+              </div>
+            ) : (
+              <div className="bg-[#FAFAFA] rounded-xl p-6 border border-[#E5E5E5] min-h-[400px] flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+                  <Mail size={32} className="text-emerald-500" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">No Cover Letter Yet</h3>
+                <p className="text-gray-500 text-sm max-w-xs">
+                  Fill in the job details and click "Generate" to create a tailored cover letter.
+                </p>
+              </div>
+            )}
+
+            {generatedLetter && (
+              <div className="mt-6 p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={20} className="text-emerald-500 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-emerald-800 text-sm">Pro Tips</p>
+                    <ul className="text-emerald-700 text-xs mt-1 space-y-1">
+                      <li>• Personalize it with your name and contact info</li>
+                      <li>• Review and adjust any details before sending</li>
+                      <li>• Match the format to the company's culture</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const LoginPage = ({ setView, onLoginSuccess }: { setView: (v: View) => void; onLoginSuccess?: () => void }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState('');
@@ -2180,7 +2455,7 @@ const LoginPage = ({ setView, onLoginSuccess }: { setView: (v: View) => void; on
             {error && (
               <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
                 {error}
-              </div>
+            </div>
             )}
 
             {/* Google Sign-In Button */}
@@ -2218,9 +2493,9 @@ const LoginPage = ({ setView, onLoginSuccess }: { setView: (v: View) => void; on
                 <span className="flex items-center gap-2"><ShieldCheck size={14} /> Secure</span>
                 <span className="flex items-center gap-2"><Zap size={14} /> Fast</span>
                 <span className="flex items-center gap-2"><Lock size={14} /> Private</span>
+                </div>
               </div>
-            </div>
-          </div>
+                </div>
         </div>
       </div>
     </div>
@@ -3178,50 +3453,128 @@ JavaScript, Python, React, Node.js"
   return null;
 };
 
-const ResumeManager = ({ setView }: { setView: (v: View) => void }) => {
-  const { getResumes, addResume, updateResume, deleteResume, MAX_SLOTS } = useResumeStorage();
+const ResumeManager = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
+  const localStorageHook = useResumeStorage();
   const [resumes, setResumes] = useState<SavedResume[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newResumeName, setNewResumeName] = useState('');
   const [newResumeTarget, setNewResumeTarget] = useState('');
   const [newResumeContent, setNewResumeContent] = useState('');
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const MAX_SLOTS = 5;
+
+  // Load resumes from Firebase or localStorage
+  const loadResumes = async () => {
+    setIsLoading(true);
+    try {
+      if (user) {
+        // Use Firebase
+        const firebaseResumes = await getUserResumes(user.uid);
+        const mapped: SavedResume[] = firebaseResumes.map(r => ({
+          id: r.id,
+          name: r.name,
+          targetJob: r.targetRole,
+          content: r.content,
+          isPrimary: r.isPrimary,
+          analysisComplete: r.isAnalyzed,
+          atsScore: r.atsScore || null,
+          createdAt: r.createdAt,
+          lastModified: r.updatedAt
+        }));
+        setResumes(mapped);
+      } else {
+        // Use localStorage
+        setResumes(localStorageHook.getResumes());
+      }
+    } catch (error) {
+      console.error('Error loading resumes:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setResumes(getResumes());
-  }, []);
+    loadResumes();
+  }, [user]);
 
-  const refreshResumes = () => setResumes(getResumes());
-
-  const handleAddResume = () => {
+  const handleAddResume = async () => {
     if (!newResumeName.trim()) return;
-    const success = addResume({
-      name: newResumeName,
-      targetJob: newResumeTarget,
-      content: newResumeContent,
-      isPrimary: resumes.length === 0,
-      analysisComplete: false,
-      atsScore: null
-    });
-    if (success) {
+    
+    if (resumes.length >= MAX_SLOTS) {
+      alert('Maximum resume slots reached!');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (user) {
+        // Save to Firebase
+        await saveResume(user.uid, {
+          name: newResumeName,
+          targetRole: newResumeTarget,
+          content: newResumeContent,
+          isPrimary: resumes.length === 0,
+          isAnalyzed: false,
+          atsScore: undefined
+        });
+      } else {
+        // Save to localStorage
+        localStorageHook.addResume({
+          name: newResumeName,
+          targetJob: newResumeTarget,
+          content: newResumeContent,
+          isPrimary: resumes.length === 0,
+          analysisComplete: false,
+          atsScore: null
+        });
+      }
+      
       setShowAddModal(false);
       setNewResumeName('');
       setNewResumeTarget('');
       setNewResumeContent('');
-      refreshResumes();
+      await loadResumes();
+    } catch (error) {
+      console.error('Error adding resume:', error);
+      alert('Failed to save resume. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
-    deleteResume(id);
-    refreshResumes();
-    setActiveMenu(null);
+  const handleDelete = async (id: string) => {
+    setIsLoading(true);
+    try {
+      if (user) {
+        await deleteResume(id);
+      } else {
+        localStorageHook.deleteResume(id);
+      }
+      await loadResumes();
+    } catch (error) {
+      console.error('Error deleting resume:', error);
+    } finally {
+      setIsLoading(false);
+      setActiveMenu(null);
+    }
   };
 
-  const handleSetPrimary = (id: string) => {
-    updateResume(id, { isPrimary: true });
-    refreshResumes();
-    setActiveMenu(null);
+  const handleSetPrimary = async (id: string) => {
+    setIsLoading(true);
+    try {
+      if (user) {
+        await setPrimaryResume(user.uid, id);
+      } else {
+        localStorageHook.updateResume(id, { isPrimary: true });
+      }
+      await loadResumes();
+    } catch (error) {
+      console.error('Error setting primary:', error);
+    } finally {
+      setIsLoading(false);
+      setActiveMenu(null);
+    }
   };
 
   const slotsUsed = resumes.length;
@@ -3526,9 +3879,11 @@ export default function App() {
 
       {view === 'login' && <LoginPage setView={setView} />}
       
-      {view === 'resume-manager' && <ResumeManager setView={setView} />}
+      {view === 'resume-manager' && <ResumeManager setView={setView} user={user} />}
       
       {view === 'resume-builder' && <ResumeBuilder />}
+
+      {view === 'cover-letter' && <CoverLetterGenerator setView={setView} />}
 
       {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       
