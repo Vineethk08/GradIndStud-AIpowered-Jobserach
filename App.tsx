@@ -50,7 +50,10 @@ import {
   Clock,
   Calendar,
   Shield,
-  IndianRupee
+  IndianRupee,
+  Mic,
+  MicOff,
+  Volume2
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -2475,6 +2478,66 @@ const InterviewPrep = ({ setView }: { setView: (v: View) => void }) => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [score, setScore] = useState<number | null>(null);
   const [interviewHistory, setInterviewHistory] = useState<{question: string; answer: string; feedback: string; score: number}[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recognition, setRecognition] = useState<any>(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition();
+        recognitionInstance.continuous = true;
+        recognitionInstance.interimResults = true;
+        recognitionInstance.lang = 'en-US';
+        
+        recognitionInstance.onresult = (event: any) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          if (finalTranscript) {
+            setUserAnswer(prev => prev + finalTranscript);
+          }
+        };
+        
+        recognitionInstance.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+        };
+        
+        recognitionInstance.onend = () => {
+          setIsRecording(false);
+        };
+        
+        setRecognition(recognitionInstance);
+      }
+    }
+  }, []);
+
+  const toggleRecording = () => {
+    if (!recognition) {
+      alert('Speech recognition is not supported in your browser. Try Chrome or Edge.');
+      return;
+    }
+    
+    if (isRecording) {
+      recognition.stop();
+      setIsRecording(false);
+    } else {
+      setUserAnswer(''); // Clear previous answer
+      recognition.start();
+      setIsRecording(true);
+    }
+  };
 
   const roles = [
     'Software Engineer', 'Data Scientist', 'Product Manager', 'Frontend Developer',
@@ -2860,18 +2923,70 @@ ${result.sampleAnswer || 'N/A'}
                   {/* Answer Input */}
                   {!feedback && (
                     <div className="mb-6">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Your Answer</label>
-                      <textarea
-                        value={userAnswer}
-                        onChange={(e) => setUserAnswer(e.target.value)}
-                        placeholder="Type your answer here... Take your time and be thorough."
-                        rows={6}
-                        className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none resize-none"
-                      />
-                      <div className="flex justify-end mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500">Your Answer</label>
+                        <div className="flex items-center gap-2">
+                          {isRecording && (
+                            <span className="flex items-center gap-1 text-red-500 text-xs font-bold animate-pulse">
+                              <span className="w-2 h-2 bg-red-500 rounded-full"></span> Recording...
+                            </span>
+                          )}
+                          <button
+                            onClick={toggleRecording}
+                            className={`p-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
+                              isRecording 
+                                ? 'bg-red-500 text-white animate-pulse' 
+                                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:opacity-90'
+                            }`}
+                            title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
+                          >
+                            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                            {isRecording ? 'Stop' : 'Speak'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="relative">
+                        <textarea
+                          value={userAnswer}
+                          onChange={(e) => setUserAnswer(e.target.value)}
+                          placeholder={isRecording ? "🎤 Listening... speak your answer clearly" : "Type your answer or click 'Speak' to use voice input..."}
+                          rows={6}
+                          className={`w-full px-4 py-3 border-2 rounded-xl focus:border-black outline-none resize-none transition-all ${
+                            isRecording ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                          }`}
+                        />
+                        {isRecording && (
+                          <div className="absolute bottom-3 right-3 flex items-center gap-1">
+                            <Volume2 size={16} className="text-red-500 animate-pulse" />
+                            <div className="flex gap-0.5">
+                              {[1,2,3,4].map(i => (
+                                <div key={i} className="w-1 bg-red-500 rounded animate-pulse" style={{
+                                  height: `${8 + Math.random() * 12}px`,
+                                  animationDelay: `${i * 0.1}s`
+                                }}></div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+                        <Mic size={12} /> Pro tip: Speak naturally like you would in a real interview!
+                      </p>
+                      
+                      <div className="flex justify-end mt-4 gap-3">
+                        {userAnswer && (
+                          <button
+                            onClick={() => setUserAnswer('')}
+                            className="px-6 py-3 border rounded-xl font-bold text-gray-500 hover:bg-gray-50"
+                          >
+                            Clear
+                          </button>
+                        )}
                         <button
                           onClick={submitAnswer}
-                          disabled={!userAnswer.trim() || isLoading}
+                          disabled={!userAnswer.trim() || isLoading || isRecording}
                           className="px-8 py-3 bg-black text-white rounded-xl font-bold flex items-center gap-2 disabled:opacity-50"
                         >
                           {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
