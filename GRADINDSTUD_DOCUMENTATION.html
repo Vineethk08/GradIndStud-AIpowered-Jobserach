@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GradIndStud - Complete Feature Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            color: #1a1a1a;
+            border-bottom: 4px solid #10B981;
+            padding-bottom: 15px;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.8em;
+            color: #10B981;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        h3 {
+            font-size: 1.3em;
+            color: #374151;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px 0;
+        }
+        
+        .highlight-box h3 {
+            color: white;
+            margin-top: 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+        
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        .feature-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .feature-card h3 {
+            margin-top: 0;
+            color: #10B981;
+        }
+        
+        ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .tag {
+            display: inline-block;
+            background: #10B981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 3px;
+        }
+        
+        .tag.gray {
+            background: #6b7280;
+        }
+        
+        .pricing-tier {
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 15px 0;
+        }
+        
+        .pricing-tier.pro {
+            border-color: #10B981;
+            background: linear-gradient(to bottom, #ecfdf5, #fff);
+        }
+        
+        .pricing-tier h4 {
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+        
+        .price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #10B981;
+        }
+        
+        .toc {
+            background: #f3f4f6;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 30px 0;
+        }
+        
+        .toc h3 {
+            margin-top: 0;
+        }
+        
+        .toc ol {
+            columns: 2;
+            column-gap: 30px;
+        }
+        
+        .workflow {
+            background: #1a1a1a;
+            color: #10B981;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 20px 0;
+        }
+        
+        .logo {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+        }
+        
+        @media print {
+            body {
+                padding: 20px;
+            }
+            .feature-card, .pricing-tier {
+                break-inside: avoid;
+            }
+            h2 {
+                break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">🚀</div>
+    <h1>GradIndStud</h1>
+    <p class="subtitle">AI-Powered Job Search Platform - Complete Feature Documentation</p>
+    
+    <div class="highlight-box">
+        <h3>🌐 Live Platform</h3>
+        <p><strong>URL:</strong> https://gradindstud-aipowered-jobserach-457608791836.europe-west1.run.app/</p>
+        <p><strong>Mission:</strong> "We don't sell hope—we sell access."</p>
+    </div>
+    
+    <div class="toc">
+        <h3>📋 Table of Contents</h3>
+        <ol>
+            <li>Platform Overview</li>
+            <li>Target Audience</li>
+            <li>Core Features (9 Modules)</li>
+            <li>AI Agent - LEKI</li>
+            <li>Subscription Tiers</li>
+            <li>Technical Stack</li>
+            <li>Deployment & Infrastructure</li>
+            <li>Security Features</li>
+            <li>Future Roadmap</li>
+        </ol>
+    </div>
+    
+    <h2>🎯 Platform Overview</h2>
+    <p><strong>GradIndStud</strong> is an AI-native career platform designed specifically for Indian students and professionals seeking job opportunities globally. The platform combines real-time job listings, AI-powered resume optimization, and intelligent career guidance through our proprietary LEKI AI agent.</p>
+    
+    <h2>👥 Target Audience</h2>
+    <table>
+        <tr><th>Segment</th><th>Description</th></tr>
+        <tr><td>Fresh Graduates</td><td>Students completing their degrees seeking first jobs</td></tr>
+        <tr><td>Indian Professionals</td><td>Working professionals looking for better opportunities</td></tr>
+        <tr><td>Career Changers</td><td>Individuals transitioning between industries</td></tr>
+        <tr><td>International Job Seekers</td><td>Indians seeking opportunities in USA & globally</td></tr>
+    </table>
+    
+    <h2>🚀 Core Features</h2>
+    
+    <div class="feature-card">
+        <h3>1. Real Job Search 🔍</h3>
+        <p>Access to 50,000+ verified job listings from top companies worldwide.</p>
+        <p><strong>Capabilities:</strong></p>
+        <ul>
+            <li>Real-time job search using JSearch API</li>
+            <li>Filter by location (USA, India, Remote)</li>
+            <li>20+ job role categories</li>
+            <li>City-specific searches (New York, San Francisco, Bangalore, etc.)</li>
+        </ul>
+        <p><strong>Job Categories:</strong></p>
+        <span class="tag">Software Engineer</span>
+        <span class="tag">Data Scientist</span>
+        <span class="tag">Product Manager</span>
+        <span class="tag">Frontend Developer</span>
+        <span class="tag">Backend Developer</span>
+        <span class="tag">DevOps</span>
+        <span class="tag">ML Engineer</span>
+        <span class="tag">UI/UX Designer</span>
+        <span class="tag">Business Analyst</span>
+        <span class="tag">HR Manager</span>
+    </div>
+    
+    <div class="feature-card">
+        <h3>2. Resume Manager 📄</h3>
+        <p>Store and manage up to 5 resume versions with cloud sync.</p>
+        <ul>
+            <li>Multiple resume slots (5 max)</li>
+            <li>Set primary resume for quick applications</li>
+            <li>Track analysis status per resume</li>
+            <li>Target job role tagging</li>
+            <li>Cloud storage with Firebase Firestore</li>
+        </ul>
+    </div>
+    
+    <div class="feature-card">
+        <h3>3. AI Resume Optimizer 🤖</h3>
+        <p>LEKI AI agent analyzes and optimizes resumes for ATS compatibility.</p>
+        <p><strong>Analysis Includes:</strong></p>
+        <ul>
+            <li>ATS Score (0-100)</li>
+            <li>Critical issues identification</li>
+            <li>Missing keywords detection</li>
+            <li>Format problems & typo corrections</li>
+            <li>Before/After comparisons</li>
+            <li>Actionable improvement suggestions</li>
+        </ul>
+        <p><strong>Optimization Rules:</strong> XYZ Formula, Strong action verbs, Quantified achievements, ATS-friendly formatting</p>
+    </div>
+    
+    <div class="feature-card">
+        <h3>4. Cover Letter Generator ✉️</h3>
+        <p>AI-powered cover letter creation tailored to specific jobs.</p>
+        <table>
+            <tr><th>Tone</th><th>Best For</th></tr>
+            <tr><td>Professional</td><td>Corporate, Traditional companies</td></tr>
+            <tr><td>Enthusiastic</td><td>Startups, Creative roles</td></tr>
+            <tr><td>Confident</td><td>Leadership, Senior positions</td></tr>
+        </table>
+    </div>
+    
+    <div class="feature-card">
+        <h3>5. Application Tracker 📊</h3>
+        <p>Kanban-style tracking for all job applications.</p>
+        <p><strong>Statuses:</strong></p>
+        <span class="tag gray">Applied</span>
+        <span class="tag gray">Phone Screen</span>
+        <span class="tag gray">Technical Interview</span>
+        <span class="tag gray">Onsite Interview</span>
+        <span class="tag">Offer Received</span>
+        <span class="tag gray">Rejected</span>
+    </div>
+    
+    <div class="feature-card">
+        <h3>6. Interview Preparation 🎤</h3>
+        <p>AI-powered mock interviews with voice support.</p>
+        <table>
+            <tr><th>Interview Type</th><th>Description</th></tr>
+            <tr><td>Behavioral</td><td>STAR method questions</td></tr>
+            <tr><td>Technical</td><td>Role-specific technical questions</td></tr>
+            <tr><td>HR Round</td><td>Culture fit & salary negotiation</td></tr>
+        </table>
+        <p><strong>Features:</strong> Voice input, Real-time transcription, AI scoring & feedback, Question bank</p>
+    </div>
+    
+    <div class="feature-card">
+        <h3>7. Company Insights 🏢</h3>
+        <p>Comprehensive company research and salary data.</p>
+        <ul>
+            <li>Company overview, industry & headquarters</li>
+            <li>Salary ranges (Entry: ₹4-12L, Mid: ₹12-25L, Senior: ₹25-50L+)</li>
+            <li>Culture ratings (Work-Life Balance, Growth, Compensation)</li>
+            <li>Interview process breakdown with difficulty rating</li>
+            <li>Tech stack, competitors, recent news</li>
+        </ul>
+    </div>
+    
+    <div class="feature-card">
+        <h3>8. External Jobs 🔗</h3>
+        <p>Add and track jobs found on other platforms.</p>
+        <p><strong>Workflow:</strong> Add job → LEKI analyzes match → Generate custom resume → Download (PDF/Word)</p>
+    </div>
+    
+    <div class="feature-card">
+        <h3>9. Notification Center 🔔</h3>
+        <p>Stay updated on job matches and application status.</p>
+        <ul>
+            <li>Job match alerts</li>
+            <li>Application status updates</li>
+            <li>Interview reminders</li>
+            <li>Browser push notifications (optional)</li>
+        </ul>
+    </div>
+    
+    <h2>🧠 AI Agent - LEKI</h2>
+    <p><strong>LEKI</strong> (Linguistic Enhancement & Knowledge Intelligence) is the proprietary AI agent powering GradIndStud's intelligent features.</p>
+    
+    <table>
+        <tr><th>Capability</th><th>Description</th></tr>
+        <tr><td>Resume Analysis</td><td>ATS scoring, issue detection, optimization</td></tr>
+        <tr><td>Resume Generation</td><td>Job-specific resume creation</td></tr>
+        <tr><td>Cover Letter Writing</td><td>Personalized cover letters</td></tr>
+        <tr><td>Job Matching</td><td>Skills gap analysis</td></tr>
+        <tr><td>Interview Tips</td><td>Company-specific preparation</td></tr>
+        <tr><td>Career Guidance</td><td>Personalized recommendations</td></tr>
+    </table>
+    <p><strong>Powered by:</strong> Google Gemini AI (gemini-2.0-flash model)</p>
+    
+    <h2>💎 Subscription Tiers</h2>
+    
+    <div class="pricing-tier">
+        <h4>Free Tier</h4>
+        <p class="price">₹0/month</p>
+        <ul>
+            <li>5 job searches per day</li>
+            <li>Basic resume tips</li>
+            <li>View job listings</li>
+            <li>Save up to 3 jobs</li>
+            <li>Community support</li>
+        </ul>
+    </div>
+    
+    <div class="pricing-tier pro">
+        <h4>⭐ Pro Tier (Most Popular)</h4>
+        <p class="price">₹1,500/month</p>
+        <ul>
+            <li>Unlimited job searches</li>
+            <li>AI Resume Generator</li>
+            <li>AI Cover Letter Generator</li>
+            <li>10 resume optimizations/month</li>
+            <li>Application Tracker</li>
+            <li>Priority support</li>
+        </ul>
+    </div>
+    
+    <div class="pricing-tier">
+        <h4>Premium Tier</h4>
+        <p class="price">₹4,000/month</p>
+        <ul>
+            <li>Everything in Pro</li>
+            <li>Unlimited AI features</li>
+            <li>AI Interview Prep with Voice</li>
+            <li>Company Insights & Salary Data</li>
+            <li>1-on-1 Career Coaching (1 session/month)</li>
+            <li>White-glove support</li>
+        </ul>
+    </div>
+    
+    <h2>🛠️ Technical Stack</h2>
+    <table>
+        <tr><th>Category</th><th>Technology</th></tr>
+        <tr><td>Frontend</td><td>React 18, TypeScript, Tailwind CSS, Vite</td></tr>
+        <tr><td>Authentication</td><td>Firebase Auth (Google Sign-In)</td></tr>
+        <tr><td>Database</td><td>Firebase Firestore</td></tr>
+        <tr><td>AI Engine</td><td>Google Gemini AI</td></tr>
+        <tr><td>Job API</td><td>JSearch (RapidAPI)</td></tr>
+        <tr><td>Hosting</td><td>Google Cloud Run</td></tr>
+        <tr><td>CI/CD</td><td>Cloud Build + GitHub</td></tr>
+        <tr><td>Container</td><td>Docker + Nginx</td></tr>
+    </table>
+    
+    <h2>🚀 Deployment Pipeline</h2>
+    <div class="workflow">
+        Code Changes → Git Push → GitHub → Cloud Build → Docker Build → Cloud Run → Live URL
+    </div>
+    <p><strong>Auto-deployment:</strong> Every push to main branch triggers automatic build and deployment (~2-3 minutes)</p>
+    
+    <h2>🔐 Security Features</h2>
+    <table>
+        <tr><th>Feature</th><th>Implementation</th></tr>
+        <tr><td>Authentication</td><td>Firebase Google OAuth 2.0</td></tr>
+        <tr><td>Route Protection</td><td>All app features require login</td></tr>
+        <tr><td>Data Encryption</td><td>HTTPS/TLS in transit</td></tr>
+        <tr><td>API Security</td><td>Environment variables</td></tr>
+    </table>
+    
+    <h2>🗺️ Roadmap</h2>
+    <table>
+        <tr><th>Status</th><th>Feature</th></tr>
+        <tr><td>✅ Complete</td><td>Real job listings, Auth, Resume storage, Tracker, Cover Letter, Interview Prep, Company Insights, Notifications, Subscriptions</td></tr>
+        <tr><td>🔜 Planned</td><td>Payment integration, Email notifications, Mobile app, LinkedIn integration</td></tr>
+        <tr><td>💡 Future</td><td>AI job recommendations, Skill assessments, Mentorship matching</td></tr>
+    </table>
+    
+    <div class="footer">
+        <p><strong>GradIndStud</strong> - AI-Powered Job Search Platform</p>
+        <p>© 2025 GradIndStud. All rights reserved.</p>
+        <p>Developer: Vineeth Kumar</p>
+        <p style="margin-top: 20px; font-size: 0.9em;">
+            🌐 Live: gradindstud-aipowered-jobserach-457608791836.europe-west1.run.app<br>
+            📂 GitHub: github.com/Vineethk08/GradIndStud-AIpowered-Jobserach
+        </p>
+    </div>
+</body>
+</html>
+

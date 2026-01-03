@@ -57,7 +57,8 @@ import {
   Bell,
   BellRing,
   Trash2,
-  Upload
+  Upload,
+  Users
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -280,6 +281,14 @@ interface ExternalJob {
   matchedSkills?: string[];
   customResume?: string;
   analyzed: boolean;
+  // Community verification fields
+  postedBy?: string;
+  postedByName?: string;
+  postedByPhoto?: string;
+  isPublic?: boolean; // Show in main job list
+  verificationCount?: number; // How many users verified this job
+  verifiedBy?: string[]; // User IDs who verified
+  reportCount?: number; // If users report as fake
 }
 
 // External Jobs Storage
@@ -415,16 +424,22 @@ const TypingText = ({ lines, speed = 40 }: { lines: string[], speed?: number }) 
 const AddExternalJobModal = ({ 
   isOpen, 
   onClose, 
-  onAdd 
+  onAdd,
+  user
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
   onAdd: (job: Omit<ExternalJob, 'id' | 'createdAt' | 'analyzed'>) => void;
+  user?: FirebaseUser | null;
 }) => {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [salary, setSalary] = useState('');
+  const [jobType, setJobType] = useState('Full-time');
+  const [isPublic, setIsPublic] = useState(true); // Share with community by default
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -439,11 +454,30 @@ const AddExternalJobModal = ({
 
   const handleSubmit = () => {
     if (validate()) {
-      onAdd({ title, url, company, description });
+      onAdd({ 
+        title, 
+        url, 
+        company, 
+        description,
+        location: location || undefined,
+        salary: salary || undefined,
+        type: jobType,
+        isPublic,
+        postedBy: user?.uid,
+        postedByName: user?.displayName || 'Anonymous',
+        postedByPhoto: user?.photoURL || undefined,
+        verificationCount: 1,
+        verifiedBy: user?.uid ? [user.uid] : [],
+        reportCount: 0
+      });
       setTitle('');
       setUrl('');
       setCompany('');
       setDescription('');
+      setLocation('');
+      setSalary('');
+      setJobType('Full-time');
+      setIsPublic(true);
       setErrors({});
       onClose();
     }
@@ -525,21 +559,93 @@ const AddExternalJobModal = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Please paste the complete job description..."
-              rows={8}
+              rows={6}
               className={`w-full px-5 py-4 bg-[#E9E1D1]/20 border rounded-xl outline-none transition-all font-medium resize-none ${
                 errors.description ? 'border-red-400' : 'border-[#CBD0D2] focus:border-black'
               }`}
             />
             {errors.description && <p className="text-xs text-red-500 font-medium">{errors.description}</p>}
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-[#3B4235]">
+                Location
+              </label>
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="e.g., New York, Remote"
+                className="w-full px-4 py-3 bg-[#E9E1D1]/20 border border-[#CBD0D2] rounded-xl outline-none focus:border-black font-medium"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-[#3B4235]">
+                Salary (Optional)
+              </label>
+              <input
+                type="text"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="e.g., $80k - $120k"
+                className="w-full px-4 py-3 bg-[#E9E1D1]/20 border border-[#CBD0D2] rounded-xl outline-none focus:border-black font-medium"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-[#3B4235]">
+              Job Type
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {['Full-time', 'Part-time', 'Contract', 'Internship', 'Remote'].map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setJobType(type)}
+                  className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                    jobType === type 
+                      ? 'bg-black text-white' 
+                      : 'bg-[#E9E1D1]/50 text-[#3B4235] hover:bg-[#E9E1D1]'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Share with Community Toggle */}
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-5">
+            <label className="flex items-start gap-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setIsPublic(e.target.checked)}
+                className="w-5 h-5 mt-1 rounded border-emerald-300 text-emerald-500 focus:ring-emerald-500"
+              />
+              <div>
+                <div className="font-bold text-emerald-800 flex items-center gap-2">
+                  <Users size={18} />
+                  Share with Community
+                </div>
+                <p className="text-sm text-emerald-600 mt-1">
+                  Help others! This job will appear in the main job list for all users. 
+                  Other users can verify this posting to build trust.
+                </p>
+              </div>
+            </label>
+          </div>
         </div>
 
         <div className="px-8 py-6 border-t border-[#E9E1D1]">
           <button
             onClick={handleSubmit}
-            className="w-full py-4 bg-emerald-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all"
+            className="w-full py-4 bg-emerald-500 text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
           >
-            Save Job
+            <Plus size={20} />
+            {isPublic ? 'Add & Share with Community' : 'Add to My Jobs'}
           </button>
         </div>
       </div>
@@ -1882,6 +1988,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
       isOpen={showAddExternal}
       onClose={() => setShowAddExternal(false)}
       onAdd={handleAddExternalJob}
+      user={user}
     />
 
     {/* External Job Detail View */}
@@ -2241,7 +2348,11 @@ For customResume: Generate a well-formatted professional resume template optimiz
           </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-sm font-bold text-gray-500">{realJobs.length} real jobs found</p>
+                  <p className="text-sm font-bold text-gray-500">
+                    {realJobs.length} API jobs + {externalJobs.filter(j => j.isPublic).length} community jobs found
+                  </p>
+                  
+                  {/* API Jobs */}
                   {realJobs.map((job) => (
                     <div
                       key={job.id}
@@ -2283,6 +2394,73 @@ For customResume: Generate a well-formatted professional resume template optimiz
                       </div>
                     </div>
                   ))}
+
+                  {/* Community Jobs (Public External Jobs) */}
+                  {externalJobs.filter(j => j.isPublic).length > 0 && (
+                    <>
+                      <div className="flex items-center gap-4 pt-6">
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
+                        <span className="text-xs font-black uppercase tracking-widest text-purple-600 flex items-center gap-2">
+                          <Users size={14} /> Community Shared Jobs
+                        </span>
+                        <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent" />
+                      </div>
+                      
+                      {externalJobs.filter(j => j.isPublic).map((job) => (
+                        <div
+                          key={job.id}
+                          onClick={() => setSelectedExternalJob(job)}
+                          className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-6 hover:border-purple-400 hover:shadow-lg transition-all cursor-pointer"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-xl">
+                              {job.company.charAt(0)}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h3 className="font-bold text-lg hover:text-purple-600">{job.title}</h3>
+                                  <p className="text-gray-600 flex items-center gap-2">
+                                    <Briefcase size={14} /> {job.company}
+                                    <span className="text-purple-600 text-xs font-bold bg-purple-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                      <Users size={10} /> Community
+                                    </span>
+                                    {(job.verificationCount || 0) > 0 && (
+                                      <span className="text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                        <ThumbsUp size={10} /> {job.verificationCount} verified
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                                <span className="text-xs text-gray-400">
+                                  {new Date(job.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 mt-3 text-sm text-gray-500">
+                                {job.location && <span className="flex items-center gap-1"><MapPin size={14} /> {job.location}</span>}
+                                {job.type && <span className="flex items-center gap-1"><Clock size={14} /> {job.type}</span>}
+                                {job.salary && <span className="flex items-center gap-1 text-emerald-600 font-bold"><IndianRupee size={14} /> {job.salary}</span>}
+                              </div>
+                              <p className="text-sm text-gray-400 mt-3 line-clamp-2">{job.description.slice(0, 200)}...</p>
+                              <div className="flex items-center gap-3 mt-4">
+                                {job.postedByPhoto ? (
+                                  <img src={job.postedByPhoto} alt="" className="w-5 h-5 rounded-full" />
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-purple-200 flex items-center justify-center text-[10px] font-bold text-purple-600">
+                                    {job.postedByName?.charAt(0) || 'U'}
+                                  </div>
+                                )}
+                                <span className="text-xs text-gray-400">Shared by {job.postedByName || 'Anonymous'}</span>
+                                <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-xs text-purple-600 hover:underline flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <ExternalLink size={12} /> Original posting
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
