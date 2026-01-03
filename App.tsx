@@ -177,7 +177,7 @@ const LEKI_CHAT_PROMPT = `You are LEKI, an AI career copilot at GRADINDSTUD. You
 Keep responses concise and actionable. Use a professional but friendly tone.`;
 
 // --- Types ---
-type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep';
+type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep' | 'company-insights';
 
 interface SavedResume {
   id: string;
@@ -1464,6 +1464,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => setView('cover-letter')} className="hover:text-black">Cover Letter</button>
           <button onClick={() => setView('applications')} className="hover:text-black">Tracker</button>
           <button onClick={() => setView('interview-prep')} className="hover:text-black">Interview</button>
+          <button onClick={() => setView('company-insights')} className="hover:text-black">Companies</button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1548,6 +1549,7 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => { setView('cover-letter'); setMobileMenu(false); }} className="text-left">Cover Letter</button>
           <button onClick={() => { setView('applications'); setMobileMenu(false); }} className="text-left">Tracker</button>
           <button onClick={() => { setView('interview-prep'); setMobileMenu(false); }} className="text-left">Interview</button>
+          <button onClick={() => { setView('company-insights'); setMobileMenu(false); }} className="text-left">Companies</button>
           {user ? (
             <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
           ) : (
@@ -2462,6 +2464,389 @@ For customResume: Generate a well-formatted professional resume template optimiz
       </aside>
     </div>
     </>
+  );
+};
+
+// Company Insights Component
+const CompanyInsights = ({ setView }: { setView: (v: View) => void }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [companyData, setCompanyData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  // Popular companies for quick access
+  const popularCompanies = [
+    { name: 'Google', logo: '🔵', industry: 'Technology' },
+    { name: 'Microsoft', logo: '🟦', industry: 'Technology' },
+    { name: 'Amazon', logo: '🟠', industry: 'E-commerce' },
+    { name: 'Apple', logo: '🍎', industry: 'Technology' },
+    { name: 'Meta', logo: '🔷', industry: 'Social Media' },
+    { name: 'Netflix', logo: '🔴', industry: 'Entertainment' },
+    { name: 'Infosys', logo: '🟢', industry: 'IT Services' },
+    { name: 'TCS', logo: '🔵', industry: 'IT Services' },
+    { name: 'Wipro', logo: '🟣', industry: 'IT Services' },
+    { name: 'Flipkart', logo: '🟡', industry: 'E-commerce' },
+    { name: 'Razorpay', logo: '🔵', industry: 'Fintech' },
+    { name: 'Swiggy', logo: '🟠', industry: 'Food Tech' }
+  ];
+
+  const searchCompany = async (companyName: string) => {
+    if (!companyName.trim() || !ai) return;
+
+    setIsLoading(true);
+    setSelectedCompany(companyName);
+    
+    // Add to recent searches
+    setRecentSearches(prev => {
+      const updated = [companyName, ...prev.filter(c => c !== companyName)].slice(0, 5);
+      return updated;
+    });
+
+    try {
+      const prompt = `You are a career research expert. Provide detailed insights about "${companyName}" as a potential employer. 
+
+Return a JSON object with this exact structure:
+{
+  "name": "${companyName}",
+  "overview": "2-3 sentence company description",
+  "industry": "Primary industry",
+  "founded": "Year founded",
+  "headquarters": "HQ location",
+  "employees": "Employee count range",
+  "rating": <number 1-5>,
+  "salaryRange": {
+    "entry": "Entry level salary range in INR LPA",
+    "mid": "Mid level salary range in INR LPA", 
+    "senior": "Senior level salary range in INR LPA"
+  },
+  "culture": {
+    "workLifeBalance": <1-5>,
+    "growth": <1-5>,
+    "compensation": <1-5>,
+    "management": <1-5>,
+    "diversity": <1-5>
+  },
+  "pros": ["pro1", "pro2", "pro3", "pro4"],
+  "cons": ["con1", "con2", "con3"],
+  "interviewProcess": ["step1", "step2", "step3", "step4"],
+  "interviewTips": ["tip1", "tip2", "tip3"],
+  "techStack": ["tech1", "tech2", "tech3", "tech4"],
+  "famousFor": "What the company is known for",
+  "competitors": ["competitor1", "competitor2", "competitor3"]
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt
+      });
+
+      const text = response.text || '';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]);
+        setCompanyData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching company data:', error);
+      setCompanyData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex gap-0.5">
+        {[1,2,3,4,5].map(i => (
+          <Star 
+            key={i} 
+            size={16} 
+            className={i <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} 
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const renderRatingBar = (label: string, value: number) => (
+    <div className="flex items-center gap-3">
+      <span className="text-sm text-gray-600 w-32">{label}</span>
+      <div className="flex-1 bg-gray-200 rounded-full h-2">
+        <div 
+          className="bg-gradient-to-r from-emerald-400 to-emerald-600 h-2 rounded-full transition-all"
+          style={{ width: `${(value / 5) * 100}%` }}
+        />
+      </div>
+      <span className="text-sm font-bold w-8">{value}/5</span>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-[#E9E1D1] pt-24 pb-12">
+      <div className="site-container max-w-5xl">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <button onClick={() => setView('job-portal')} className="p-2 hover:bg-white rounded-lg transition-all">
+            <ChevronLeft size={24} />
+          </button>
+          <div>
+            <h1 className="text-4xl font-heading flex items-center gap-3">
+              <span className="text-4xl">🏢</span> Company Insights
+            </h1>
+            <p className="text-[#3B4235]/60 text-sm">Research companies before you apply</p>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6 mb-8">
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && searchCompany(searchQuery)}
+                placeholder="Search any company (e.g., Google, Infosys, Flipkart)"
+                className="w-full pl-12 pr-4 py-4 border-2 rounded-xl focus:border-black outline-none text-lg"
+              />
+            </div>
+            <button
+              onClick={() => searchCompany(searchQuery)}
+              disabled={!searchQuery.trim() || isLoading}
+              className="px-8 py-4 bg-black text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#3B4235] disabled:opacity-50"
+            >
+              {isLoading ? <Loader2 size={20} className="animate-spin" /> : <Search size={20} />}
+              Research
+            </button>
+          </div>
+
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && !selectedCompany && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-xs font-bold text-gray-500 mb-2">Recent Searches:</p>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map(company => (
+                  <button
+                    key={company}
+                    onClick={() => searchCompany(company)}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition-all"
+                  >
+                    {company}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
+            <Loader2 size={48} className="animate-spin mx-auto mb-4 text-gray-400" />
+            <p className="font-bold text-gray-500">Researching {selectedCompany}...</p>
+            <p className="text-sm text-gray-400">Gathering salary data, reviews, and insights</p>
+          </div>
+        )}
+
+        {/* Company Details */}
+        {companyData && !isLoading && (
+          <div className="space-y-6">
+            {/* Company Header */}
+            <div className="bg-white rounded-2xl border border-[#CBD0D2] p-8">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white text-3xl font-black">
+                    {companyData.name?.charAt(0)}
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold">{companyData.name}</h2>
+                    <p className="text-gray-500 flex items-center gap-2 mt-1">
+                      <Briefcase size={16} /> {companyData.industry} • {companyData.headquarters}
+                    </p>
+                    <div className="flex items-center gap-4 mt-3">
+                      <div className="flex items-center gap-1">
+                        {renderStars(companyData.rating || 4)}
+                        <span className="font-bold ml-1">{companyData.rating || 4.0}</span>
+                      </div>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-sm text-gray-500">{companyData.employees} employees</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="text-sm text-gray-500">Founded {companyData.founded}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <p className="mt-6 text-gray-600 leading-relaxed">{companyData.overview}</p>
+              {companyData.famousFor && (
+                <div className="mt-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-sm"><span className="font-bold">🌟 Known for:</span> {companyData.famousFor}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Salary & Culture Grid */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Salary Ranges */}
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <IndianRupee size={20} /> Salary Ranges (LPA)
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { level: 'Entry Level', range: companyData.salaryRange?.entry, color: 'bg-blue-100 text-blue-700' },
+                    { level: 'Mid Level', range: companyData.salaryRange?.mid, color: 'bg-purple-100 text-purple-700' },
+                    { level: 'Senior Level', range: companyData.salaryRange?.senior, color: 'bg-emerald-100 text-emerald-700' }
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <span className="font-medium">{item.level}</span>
+                      <span className={`px-3 py-1 rounded-lg text-sm font-bold ${item.color}`}>
+                        ₹ {item.range || 'N/A'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Culture Ratings */}
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                  <Star size={20} /> Culture Ratings
+                </h3>
+                <div className="space-y-3">
+                  {renderRatingBar('Work-Life Balance', companyData.culture?.workLifeBalance || 4)}
+                  {renderRatingBar('Career Growth', companyData.culture?.growth || 4)}
+                  {renderRatingBar('Compensation', companyData.culture?.compensation || 4)}
+                  {renderRatingBar('Management', companyData.culture?.management || 3)}
+                  {renderRatingBar('Diversity', companyData.culture?.diversity || 4)}
+                </div>
+              </div>
+            </div>
+
+            {/* Pros and Cons */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-emerald-600">
+                  <ThumbsUp size={20} /> Pros
+                </h3>
+                <ul className="space-y-3">
+                  {companyData.pros?.map((pro: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-gray-600">
+                      <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                      {pro}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-red-500">
+                  <ThumbsDown size={20} /> Cons
+                </h3>
+                <ul className="space-y-3">
+                  {companyData.cons?.map((con: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2 text-gray-600">
+                      <AlertCircle size={18} className="text-red-400 mt-0.5 flex-shrink-0" />
+                      {con}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Interview Process */}
+            <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <MessageSquare size={20} /> Interview Process
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {companyData.interviewProcess?.map((step: string, i: number) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      {i + 1}
+                    </span>
+                    <span className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium">{step}</span>
+                    {i < (companyData.interviewProcess?.length || 0) - 1 && (
+                      <ArrowRight size={16} className="text-gray-400" />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {companyData.interviewTips && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                  <h4 className="font-bold text-sm mb-2 text-blue-700">💡 Interview Tips:</h4>
+                  <ul className="space-y-1">
+                    {companyData.interviewTips?.map((tip: string, i: number) => (
+                      <li key={i} className="text-sm text-blue-600">• {tip}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Tech Stack & Competitors */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {companyData.techStack && (
+                <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                    💻 Tech Stack
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {companyData.techStack?.map((tech: string, i: number) => (
+                      <span key={i} className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-medium">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {companyData.competitors && (
+                <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                    🏆 Competitors
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {companyData.competitors?.map((comp: string, i: number) => (
+                      <button
+                        key={i}
+                        onClick={() => searchCompany(comp)}
+                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-all"
+                      >
+                        {comp}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Popular Companies (shown when no company selected) */}
+        {!selectedCompany && !isLoading && (
+          <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
+            <h3 className="font-bold text-lg mb-4">🔥 Popular Companies</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {popularCompanies.map((company) => (
+                <button
+                  key={company.name}
+                  onClick={() => searchCompany(company.name)}
+                  className="p-4 bg-gray-50 hover:bg-gray-100 rounded-xl text-left transition-all group"
+                >
+                  <div className="text-3xl mb-2">{company.logo}</div>
+                  <p className="font-bold group-hover:text-blue-600 transition-all">{company.name}</p>
+                  <p className="text-xs text-gray-500">{company.industry}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -5264,6 +5649,8 @@ export default function App() {
       {view === 'applications' && <ApplicationTracker setView={setView} user={user} />}
 
       {view === 'interview-prep' && <InterviewPrep setView={setView} />}
+
+      {view === 'company-insights' && <CompanyInsights setView={setView} />}
 
       {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       
