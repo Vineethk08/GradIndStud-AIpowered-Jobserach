@@ -267,6 +267,7 @@ interface ExternalJob {
   id: string;
   title: string;
   company: string;
+  companyLogo?: string; // Auto-fetched company logo
   url: string;
   description: string;
   location?: string;
@@ -435,12 +436,144 @@ const AddExternalJobModal = ({
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [company, setCompany] = useState('');
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [logoLoading, setLogoLoading] = useState(false);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [salary, setSalary] = useState('');
   const [jobType, setJobType] = useState('Full-time');
   const [isPublic, setIsPublic] = useState(true); // Share with community by default
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Company name to domain mapping for common companies
+  const companyDomains: Record<string, string> = {
+    'google': 'google.com',
+    'microsoft': 'microsoft.com',
+    'amazon': 'amazon.com',
+    'apple': 'apple.com',
+    'meta': 'meta.com',
+    'facebook': 'facebook.com',
+    'netflix': 'netflix.com',
+    'tesla': 'tesla.com',
+    'uber': 'uber.com',
+    'airbnb': 'airbnb.com',
+    'spotify': 'spotify.com',
+    'twitter': 'twitter.com',
+    'x': 'x.com',
+    'linkedin': 'linkedin.com',
+    'salesforce': 'salesforce.com',
+    'oracle': 'oracle.com',
+    'ibm': 'ibm.com',
+    'intel': 'intel.com',
+    'nvidia': 'nvidia.com',
+    'adobe': 'adobe.com',
+    'paypal': 'paypal.com',
+    'stripe': 'stripe.com',
+    'shopify': 'shopify.com',
+    'slack': 'slack.com',
+    'zoom': 'zoom.us',
+    'dropbox': 'dropbox.com',
+    'github': 'github.com',
+    'atlassian': 'atlassian.com',
+    'twilio': 'twilio.com',
+    'datadog': 'datadog.com',
+    'snowflake': 'snowflake.com',
+    'mongodb': 'mongodb.com',
+    'cloudflare': 'cloudflare.com',
+    'coinbase': 'coinbase.com',
+    'robinhood': 'robinhood.com',
+    'doordash': 'doordash.com',
+    'instacart': 'instacart.com',
+    'lyft': 'lyft.com',
+    'pinterest': 'pinterest.com',
+    'snap': 'snap.com',
+    'snapchat': 'snapchat.com',
+    'tiktok': 'tiktok.com',
+    'bytedance': 'bytedance.com',
+    'reddit': 'reddit.com',
+    'discord': 'discord.com',
+    'notion': 'notion.so',
+    'figma': 'figma.com',
+    'canva': 'canva.com',
+    'asana': 'asana.com',
+    'monday': 'monday.com',
+    'hubspot': 'hubspot.com',
+    'zendesk': 'zendesk.com',
+    'servicenow': 'servicenow.com',
+    'workday': 'workday.com',
+    'vmware': 'vmware.com',
+    'cisco': 'cisco.com',
+    'dell': 'dell.com',
+    'hp': 'hp.com',
+    'samsung': 'samsung.com',
+    'sony': 'sony.com',
+    'infosys': 'infosys.com',
+    'tcs': 'tcs.com',
+    'wipro': 'wipro.com',
+    'cognizant': 'cognizant.com',
+    'accenture': 'accenture.com',
+    'deloitte': 'deloitte.com',
+    'pwc': 'pwc.com',
+    'kpmg': 'kpmg.com',
+    'ey': 'ey.com',
+    'mckinsey': 'mckinsey.com',
+    'bcg': 'bcg.com',
+    'bain': 'bain.com',
+    'goldman sachs': 'goldmansachs.com',
+    'jp morgan': 'jpmorgan.com',
+    'morgan stanley': 'morganstanley.com',
+    'bank of america': 'bankofamerica.com',
+    'wells fargo': 'wellsfargo.com',
+    'citi': 'citi.com',
+    'barclays': 'barclays.com',
+    'hsbc': 'hsbc.com',
+    'collate': 'getcollate.io',
+  };
+
+  // Fetch company logo when company name changes
+  useEffect(() => {
+    const fetchLogo = async () => {
+      if (!company.trim() || company.length < 2) {
+        setCompanyLogo(null);
+        return;
+      }
+
+      setLogoLoading(true);
+      
+      // Try to get domain from mapping or guess it
+      const companyLower = company.toLowerCase().trim();
+      let domain = companyDomains[companyLower];
+      
+      if (!domain) {
+        // Try to guess the domain
+        const cleanName = companyLower.replace(/[^a-z0-9]/g, '');
+        domain = `${cleanName}.com`;
+      }
+
+      // Use Clearbit Logo API (free, no API key needed)
+      const logoUrl = `https://logo.clearbit.com/${domain}`;
+      
+      // Check if the logo exists
+      try {
+        const img = new Image();
+        img.onload = () => {
+          setCompanyLogo(logoUrl);
+          setLogoLoading(false);
+        };
+        img.onerror = () => {
+          setCompanyLogo(null);
+          setLogoLoading(false);
+        };
+        img.src = logoUrl;
+      } catch {
+        setCompanyLogo(null);
+        setLogoLoading(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchLogo, 500);
+    return () => clearTimeout(debounceTimer);
+  }, [company]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -458,6 +591,7 @@ const AddExternalJobModal = ({
         title, 
         url, 
         company, 
+        companyLogo: companyLogo || undefined,
         description,
         location: location || undefined,
         salary: salary || undefined,
@@ -473,6 +607,7 @@ const AddExternalJobModal = ({
       setTitle('');
       setUrl('');
       setCompany('');
+      setCompanyLogo(null);
       setDescription('');
       setLocation('');
       setSalary('');
@@ -535,20 +670,36 @@ const AddExternalJobModal = ({
               <span className="text-red-500">*</span> Company Name
             </label>
             <div className="relative">
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#E9E1D1] rounded-lg flex items-center justify-center">
-                <Briefcase size={16} className="text-[#3B4235]/40" />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden bg-[#E9E1D1]">
+                {logoLoading ? (
+                  <Loader2 size={16} className="animate-spin text-[#3B4235]/40" />
+                ) : companyLogo ? (
+                  <img src={companyLogo} alt={company} className="w-full h-full object-contain p-1" />
+                ) : (
+                  <Briefcase size={16} className="text-[#3B4235]/40" />
+                )}
               </div>
               <input
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                placeholder="Enter the company name"
+                placeholder="Enter company name (e.g., Google, Microsoft)"
                 className={`w-full pl-16 pr-5 py-4 bg-[#E9E1D1]/20 border rounded-xl outline-none transition-all font-medium ${
                   errors.company ? 'border-red-400' : 'border-[#CBD0D2] focus:border-black'
                 }`}
               />
+              {companyLogo && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                    <CheckCircle2 size={14} /> Logo found
+                  </span>
+                </div>
+              )}
             </div>
             {errors.company && <p className="text-xs text-red-500 font-medium">{errors.company}</p>}
+            {!companyLogo && company.length > 2 && !logoLoading && (
+              <p className="text-xs text-amber-600">Logo not found - will use company initial</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -2413,9 +2564,13 @@ For customResume: Generate a well-formatted professional resume template optimiz
                           className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border-2 border-purple-200 p-6 hover:border-purple-400 hover:shadow-lg transition-all cursor-pointer"
                         >
                           <div className="flex items-start gap-4">
-                            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-xl">
-                              {job.company.charAt(0)}
-                            </div>
+                            {job.companyLogo ? (
+                              <img src={job.companyLogo} alt={job.company} className="w-14 h-14 rounded-xl object-contain bg-white p-2 border border-purple-100" />
+                            ) : (
+                              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-black text-xl">
+                                {job.company.charAt(0)}
+                              </div>
+                            )}
                             <div className="flex-1">
                               <div className="flex items-start justify-between">
                                 <div>
