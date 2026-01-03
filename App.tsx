@@ -211,7 +211,16 @@ const LEKI_CHAT_PROMPT = `You are LEKI, a Personal AI Career Agent at GRADINDSTU
 Keep responses concise and actionable. Use a professional but friendly tone.`;
 
 // --- Types ---
-type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep' | 'company-insights' | 'notifications';
+type View = 'landing' | 'login' | 'resume-builder' | 'resume-manager' | 'job-portal' | 'cover-letter' | 'applications' | 'interview-prep' | 'company-insights' | 'notifications' | 'pricing';
+
+// Subscription types
+type SubscriptionTier = 'free' | 'pro' | 'premium';
+
+interface UserSubscription {
+  tier: SubscriptionTier;
+  expiresAt?: Date;
+  features: string[];
+}
 
 // Notification types
 interface AppNotification {
@@ -1513,6 +1522,9 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => setView('notifications')} className="hover:text-black relative">
             <Bell size={18} />
           </button>
+          <button onClick={() => setView('pricing')} className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-bold hover:opacity-90">
+            Upgrade
+          </button>
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1600,6 +1612,9 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <button onClick={() => { setView('company-insights'); setMobileMenu(false); }} className="text-left">Companies</button>
           <button onClick={() => { setView('notifications'); setMobileMenu(false); }} className="text-left flex items-center gap-2">
             <Bell size={16} /> Notifications
+          </button>
+          <button onClick={() => { setView('pricing'); setMobileMenu(false); }} className="text-left flex items-center gap-2 text-emerald-600 font-bold">
+            ⭐ Upgrade to Pro
           </button>
           {user ? (
             <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
@@ -2505,6 +2520,265 @@ For customResume: Generate a well-formatted professional resume template optimiz
       </aside>
     </div>
     </>
+  );
+};
+
+// Pricing Page Component
+const PricingPage = ({ setView, user }: { setView: (v: View) => void; user?: FirebaseUser | null }) => {
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionTier | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const plans = [
+    {
+      id: 'free' as SubscriptionTier,
+      name: 'Free',
+      price: { monthly: 0, yearly: 0 },
+      description: 'Get started with basic features',
+      features: [
+        '5 Job searches per day',
+        'Basic resume tips',
+        'View job listings',
+        'Save up to 3 jobs',
+        'Community support'
+      ],
+      notIncluded: [
+        'AI Resume Generator',
+        'AI Cover Letter',
+        'Interview Prep',
+        'Company Insights',
+        'Unlimited searches'
+      ],
+      cta: 'Current Plan',
+      popular: false,
+      color: 'gray'
+    },
+    {
+      id: 'pro' as SubscriptionTier,
+      name: 'Pro',
+      price: { monthly: 19, yearly: 190 },
+      description: 'Perfect for active job seekers',
+      features: [
+        'Unlimited job searches',
+        'AI Resume Generator',
+        'AI Cover Letter Generator',
+        '10 Resume optimizations/month',
+        'Application Tracker',
+        'Email notifications',
+        'Priority support'
+      ],
+      notIncluded: [
+        'Interview Prep with AI',
+        'Company Insights',
+        'Voice interview practice'
+      ],
+      cta: 'Upgrade to Pro',
+      popular: true,
+      color: 'emerald'
+    },
+    {
+      id: 'premium' as SubscriptionTier,
+      name: 'Premium',
+      price: { monthly: 49, yearly: 490 },
+      description: 'Everything you need to land your dream job',
+      features: [
+        'Everything in Pro',
+        'Unlimited AI Resume Generation',
+        'Unlimited Cover Letters',
+        'AI Interview Prep with Voice',
+        'Company Insights & Salary Data',
+        'Mock Interview Feedback',
+        'Resume ATS Score Analysis',
+        '1-on-1 Career Coaching (1 session/month)',
+        'Priority job recommendations',
+        'White-glove support'
+      ],
+      notIncluded: [],
+      cta: 'Go Premium',
+      popular: false,
+      color: 'purple'
+    }
+  ];
+
+  const handleSubscribe = async (planId: SubscriptionTier) => {
+    if (!user) {
+      setView('login');
+      return;
+    }
+
+    if (planId === 'free') {
+      alert('You are already on the Free plan!');
+      return;
+    }
+
+    setIsProcessing(true);
+    setSelectedPlan(planId);
+
+    // Simulate payment processing
+    // In production, integrate with Stripe Checkout
+    setTimeout(() => {
+      alert(`🎉 Thank you for choosing ${planId.toUpperCase()}!\n\nIn production, this would redirect to Stripe Checkout.\n\nTo integrate Stripe:\n1. Create a Stripe account\n2. Add your API keys\n3. Create price IDs for each plan\n4. Use Stripe Checkout for payments`);
+      setIsProcessing(false);
+      setSelectedPlan(null);
+    }, 1500);
+  };
+
+  const yearlyDiscount = 20; // 20% discount for yearly
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#E9E1D1] via-white to-[#E9E1D1] pt-24 pb-12">
+      <div className="site-container max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <button onClick={() => setView('landing')} className="mb-6 text-gray-500 hover:text-black flex items-center gap-2 mx-auto">
+            <ChevronLeft size={20} /> Back to Home
+          </button>
+          <h1 className="text-5xl font-black mb-4">
+            Choose Your Plan
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Unlock powerful AI tools to land your dream job faster
+          </p>
+
+          {/* Billing Toggle */}
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <span className={`font-bold ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-400'}`}>Monthly</span>
+            <button
+              onClick={() => setBillingCycle(billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+              className="relative w-16 h-8 bg-gray-200 rounded-full transition-all"
+            >
+              <div className={`absolute top-1 w-6 h-6 bg-black rounded-full transition-all ${
+                billingCycle === 'yearly' ? 'left-9' : 'left-1'
+              }`} />
+            </button>
+            <span className={`font-bold ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-400'}`}>
+              Yearly
+              <span className="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                Save {yearlyDiscount}%
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-3 gap-8">
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative bg-white rounded-3xl border-2 p-8 transition-all hover:shadow-2xl ${
+                plan.popular 
+                  ? 'border-emerald-500 shadow-xl scale-105' 
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-emerald-500 text-white text-xs font-black rounded-full uppercase tracking-wider">
+                  Most Popular
+                </div>
+              )}
+
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
+                <p className="text-gray-500 text-sm">{plan.description}</p>
+                <div className="mt-6">
+                  <span className="text-5xl font-black">
+                    ${billingCycle === 'monthly' ? plan.price.monthly : Math.round(plan.price.yearly / 12)}
+                  </span>
+                  <span className="text-gray-400">/month</span>
+                  {billingCycle === 'yearly' && plan.price.yearly > 0 && (
+                    <p className="text-sm text-emerald-600 mt-1">
+                      Billed ${plan.price.yearly}/year
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleSubscribe(plan.id)}
+                disabled={isProcessing && selectedPlan === plan.id}
+                className={`w-full py-4 rounded-xl font-bold text-center transition-all mb-8 flex items-center justify-center gap-2 ${
+                  plan.id === 'free'
+                    ? 'bg-gray-100 text-gray-500 cursor-default'
+                    : plan.popular
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }`}
+              >
+                {isProcessing && selectedPlan === plan.id ? (
+                  <><Loader2 size={18} className="animate-spin" /> Processing...</>
+                ) : (
+                  plan.cta
+                )}
+              </button>
+
+              <div className="space-y-3">
+                {plan.features.map((feature, i) => (
+                  <div key={i} className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+                {plan.notIncluded.map((feature, i) => (
+                  <div key={i} className="flex items-start gap-3 text-sm text-gray-400">
+                    <X size={18} className="flex-shrink-0 mt-0.5" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* FAQ */}
+        <div className="mt-16 max-w-3xl mx-auto">
+          <h2 className="text-3xl font-black text-center mb-8">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {[
+              {
+                q: 'Can I cancel anytime?',
+                a: 'Yes! You can cancel your subscription at any time. You\'ll continue to have access until the end of your billing period.'
+              },
+              {
+                q: 'What payment methods do you accept?',
+                a: 'We accept all major credit cards (Visa, Mastercard, Amex) through our secure payment processor Stripe.'
+              },
+              {
+                q: 'Is there a free trial?',
+                a: 'Yes! You can use the Free plan forever with limited features. Upgrade anytime to unlock more.'
+              },
+              {
+                q: 'Can I switch plans?',
+                a: 'Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately.'
+              }
+            ].map((faq, i) => (
+              <div key={i} className="bg-white rounded-2xl border p-6">
+                <h4 className="font-bold mb-2">{faq.q}</h4>
+                <p className="text-gray-600 text-sm">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="mt-12 text-center">
+          <p className="text-sm text-gray-400 mb-4">Trusted by 10,000+ job seekers</p>
+          <div className="flex items-center justify-center gap-8 text-gray-300">
+            <div className="flex items-center gap-2">
+              <Shield size={20} />
+              <span className="text-xs font-bold">SSL Secured</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Lock size={20} />
+              <span className="text-xs font-bold">256-bit Encryption</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 size={20} />
+              <span className="text-xs font-bold">Money-back Guarantee</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -6018,6 +6292,8 @@ export default function App() {
       {view === 'company-insights' && <CompanyInsights setView={setView} />}
 
       {view === 'notifications' && <NotificationCenter setView={setView} user={user} />}
+
+      {view === 'pricing' && <PricingPage setView={setView} user={user} />}
 
       {view === 'job-portal' && <JobPortal setView={setView} user={user} />}
       
