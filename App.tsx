@@ -2015,131 +2015,122 @@ For customResume: Generate a well-formatted professional resume template optimiz
       {/* CENTRAL JOB FEED */}
       <main className="flex-1 flex flex-col overflow-y-auto">
         <header className="px-10 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2">
-                 <h2 className="text-3xl font-black uppercase tracking-tight">Jobs</h2>
-                 <ChevronRight size={24} className="text-[#CBD0D2]" />
+          {/* Unified Search & Filter Header */}
+          <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6 mb-6">
+            {/* Search Bar */}
+            <div className="flex flex-wrap gap-4 items-end mb-6">
+              <div className="flex-1 min-w-[250px]">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Job Title / Keywords</label>
+                <input
+                  type="text"
+                  value={jobSearchQuery}
+                  onChange={(e) => setJobSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchRealJobs()}
+                  placeholder="Software Engineer, Product Manager, Data Analyst..."
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:border-black outline-none"
+                />
               </div>
-              <div className="flex bg-white/40 p-1.5 rounded-2xl border border-[#CBD0D2]">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Location</label>
+                <input
+                  type="text"
+                  value={jobSearchLocation}
+                  onChange={(e) => setJobSearchLocation(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchRealJobs()}
+                  placeholder="India, Bangalore, Remote..."
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:border-black outline-none"
+                />
+              </div>
+              <button
+                onClick={() => fetchRealJobs()}
+                disabled={isLoadingJobs}
+                className="px-8 py-3 bg-black text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#3B4235] disabled:opacity-50"
+              >
+                {isLoadingJobs ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+                Search
+              </button>
+            </div>
+
+            {/* Role Categories */}
+            <div className="border-t pt-4">
+              <p className="text-xs font-bold text-gray-500 mb-3">Popular Roles:</p>
+              <div className="flex flex-wrap gap-2">
                 {[
-                  { id: 'Real Jobs', count: realJobs.length },
-                  { id: 'Recommended', count: null },
-                  { id: 'External', count: externalJobs.length }
-                ].map((tab) => (
+                  { name: 'Software Engineer', query: 'software engineer' },
+                  { name: 'Frontend Developer', query: 'frontend developer' },
+                  { name: 'Backend Developer', query: 'backend developer' },
+                  { name: 'Full Stack', query: 'full stack developer' },
+                  { name: 'Data Scientist', query: 'data scientist' },
+                  { name: 'Data Analyst', query: 'data analyst' },
+                  { name: 'Product Manager', query: 'product manager' },
+                  { name: 'DevOps', query: 'devops engineer' },
+                  { name: 'Cloud Engineer', query: 'cloud engineer' },
+                  { name: 'ML Engineer', query: 'machine learning engineer' },
+                  { name: 'UI/UX Designer', query: 'ux designer' },
+                  { name: 'QA Engineer', query: 'qa engineer' },
+                  { name: 'HR Manager', query: 'hr manager' },
+                  { name: 'Business Analyst', query: 'business analyst' },
+                  { name: 'Marketing', query: 'marketing manager' },
+                  { name: 'Sales', query: 'sales executive' },
+                  { name: 'Finance', query: 'finance analyst' },
+                  { name: 'Healthcare', query: 'healthcare' },
+                  { name: 'Operations', query: 'operations manager' },
+                  { name: 'Content Writer', query: 'content writer' }
+                ].map((role) => (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-2 rounded-xl text-xs font-black transition-all flex items-center gap-2 ${
-                      activeTab === tab.id 
-                        ? tab.id === 'External' 
-                          ? 'bg-emerald-600 text-white shadow-lg' 
-                          : 'bg-black text-white shadow-lg' 
-                        : 'text-[#3B4235]/40 hover:text-[#3B4235]'
+                    key={role.name}
+                    onClick={() => {
+                      setJobSearchQuery(role.query);
+                      fetchRealJobs(role.query);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      jobSearchQuery === role.query
+                        ? 'bg-black text-white'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                     }`}
                   >
-                    {tab.id}
-                    {tab.count !== null && (
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                        activeTab === tab.id ? 'bg-white/20' : 'bg-black text-white'
-                      }`}>
-                        {tab.count}
-                      </span>
-                    )}
+                    {role.name}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="relative w-80">
-              <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#CBD0D2]" />
-              <input type="text" placeholder="Search by title or company" className="w-full pl-14 pr-6 py-3.5 bg-white border border-[#CBD0D2] rounded-full text-xs font-bold outline-none focus:border-black transition-all" />
-            </div>
           </div>
 
-          {/* Filter Tags */}
-          <FilterTags 
-            filters={filters} 
-            setFilters={setFilters} 
-            onEditClick={() => setShowFilters(true)} 
-          />
-
-          {/* Sorting */}
-          <div className="flex items-center justify-between pb-4">
-            <div className="flex items-center gap-3">
-              <HelpCircle size={16} className="text-[#CBD0D2]" />
-              <span className="text-xs font-bold text-[#3B4235]/60">
-                {filteredJobs.length} jobs match your criteria
-              </span>
+          {/* Tabs & Results Count */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex bg-white/60 p-1 rounded-xl border border-[#CBD0D2]">
+              {[
+                { id: 'Real Jobs', count: realJobs.length },
+                { id: 'External', count: externalJobs.length }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${
+                    activeTab === tab.id 
+                      ? 'bg-black text-white' 
+                      : 'text-gray-500 hover:text-black'
+                  }`}
+                >
+                  {tab.id}
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                    activeTab === tab.id ? 'bg-white/20' : 'bg-gray-200'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-[#3B4235]/40">Sort by:</span>
-              <select className="appearance-none px-4 py-2 bg-white border border-[#CBD0D2] rounded-xl text-xs font-black text-[#3B4235] outline-none cursor-pointer">
-                <option>Recommended</option>
-                <option>Most Recent</option>
-                <option>Highest Match</option>
-                <option>Salary (High to Low)</option>
-              </select>
-            </div>
+            <span className="text-xs font-bold text-gray-500">
+              {activeTab === 'Real Jobs' ? realJobs.length : externalJobs.length} jobs found
+            </span>
           </div>
         </header>
 
         <section className="px-10 py-4 space-y-6 max-w-5xl">
           {/* Real Jobs Tab Content */}
           {activeTab === 'Real Jobs' && (
-            <div className="space-y-6">
-              {/* Search Bar */}
-              <div className="bg-white rounded-2xl border border-[#CBD0D2] p-6">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Job Title / Keywords</label>
-                    <input
-                      type="text"
-                      value={jobSearchQuery}
-                      onChange={(e) => setJobSearchQuery(e.target.value)}
-                      placeholder="e.g., Software Engineer, Data Scientist"
-                      className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Location</label>
-                    <input
-                      type="text"
-                      value={jobSearchLocation}
-                      onChange={(e) => setJobSearchLocation(e.target.value)}
-                      placeholder="e.g., India, Bangalore, Remote"
-                      className="w-full px-4 py-3 border rounded-xl focus:border-black outline-none"
-                    />
-                  </div>
-                  <button
-                    onClick={() => fetchRealJobs()}
-                    disabled={isLoadingJobs}
-                    className="px-8 py-3 bg-black text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#3B4235] disabled:opacity-50"
-                  >
-                    {isLoadingJobs ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
-                    Search Jobs
-                  </button>
-                </div>
-
-                {/* Quick Categories */}
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-xs font-bold text-gray-500 mb-2">Quick Search:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {JOB_CATEGORIES.slice(0, 8).map((cat) => (
-                      <button
-                        key={cat.name}
-                        onClick={() => {
-                          setJobSearchQuery(cat.query);
-                          fetchRealJobs(cat.query);
-                        }}
-                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold transition-all"
-                      >
-                        {cat.name}
-              </button>
-            ))}
-                  </div>
-                </div>
-              </div>
-
+            <div className="space-y-4">
               {/* Results */}
               {isLoadingJobs ? (
                 <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
@@ -2298,25 +2289,8 @@ For customResume: Generate a well-formatted professional resume template optimiz
             </div>
           )}
 
-          {/* Recommended Tab - Direct to Real Jobs */}
-          {activeTab === 'Recommended' && filteredJobs.length === 0 && (
-            <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
-              <Briefcase size={48} className="mx-auto mb-4 text-gray-300" />
-              <h3 className="text-xl font-bold mb-2">Use Real Jobs Tab</h3>
-              <p className="text-gray-500 mb-6">
-                Click on "Real Jobs" tab to search for actual job listings from LinkedIn, Indeed, and more!
-              </p>
-              <button
-                onClick={() => setActiveTab('Real Jobs')}
-                className="px-8 py-4 bg-black text-white rounded-xl font-bold flex items-center gap-2 mx-auto hover:bg-[#3B4235]"
-              >
-                <Search size={18} /> Search Real Jobs
-              </button>
-            </div>
-          )}
-
-          {/* Recommended/Liked/Applied Jobs */}
-          {activeTab !== 'External' && activeTab !== 'Real Jobs' && filteredJobs.length > 0 ? filteredJobs.map((job) => (
+          {/* Legacy job cards - hidden since we now use Real Jobs */}
+          {false && filteredJobs.length > 0 ? filteredJobs.map((job) => (
             <div key={job.id} className="bg-white rounded-[2.5rem] border border-[#CBD0D2] overflow-hidden flex shadow-sm hover:shadow-xl transition-all">
               <div className="flex-1 p-10">
                 <div className="flex items-start gap-8 mb-10">
