@@ -56,7 +56,8 @@ import {
   Volume2,
   Bell,
   BellRing,
-  Trash2
+  Trash2,
+  Upload
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { 
@@ -1510,21 +1511,40 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
           <span className="text-xl font-black tracking-tight uppercase text-black italic">GradIndStud</span>
         </div>
 
-        <div className="hidden lg:flex items-center gap-10 font-bold text-xs uppercase tracking-widest text-[#3B4235]">
-          <button onClick={() => setView('landing')} className="hover:text-black">Home</button>
-          <button onClick={() => setView('job-portal')} className="hover:text-black">Job Matches</button>
-          <button onClick={() => setView('resume-manager')} className="hover:text-black">My Resumes</button>
-          <button onClick={() => setView('resume-builder')} className="hover:text-black">AI Optimizer</button>
-          <button onClick={() => setView('cover-letter')} className="hover:text-black">Cover Letter</button>
-          <button onClick={() => setView('applications')} className="hover:text-black">Tracker</button>
-          <button onClick={() => setView('interview-prep')} className="hover:text-black">Interview</button>
-          <button onClick={() => setView('company-insights')} className="hover:text-black">Companies</button>
-          <button onClick={() => setView('notifications')} className="hover:text-black relative">
-            <Bell size={18} />
-          </button>
-          <button onClick={() => setView('pricing')} className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-bold hover:opacity-90">
-            Upgrade
-          </button>
+        <div className="hidden lg:flex items-center gap-8 font-bold text-xs uppercase tracking-widest text-[#3B4235]">
+          {/* Not logged in - Show overview links */}
+          {!user && (
+            <>
+              <button onClick={() => setView('landing')} className="hover:text-black">Home</button>
+              <a href="#features" className="hover:text-black">Features</a>
+              <a href="#how-it-works" className="hover:text-black">How It Works</a>
+              <button onClick={() => setView('pricing')} className="hover:text-black">Pricing</button>
+              <button onClick={() => setView('login')} className="hover:text-black">Login</button>
+              <button onClick={() => setView('login')} className="px-5 py-2 bg-black text-white rounded-full text-xs font-bold hover:bg-[#3B4235] transition-all">
+                Get Started Free
+              </button>
+            </>
+          )}
+          
+          {/* Logged in - Show app features */}
+          {user && (
+            <>
+              <button onClick={() => setView('job-portal')} className="hover:text-black">Job Matches</button>
+              <button onClick={() => setView('resume-manager')} className="hover:text-black">My Resumes</button>
+              <button onClick={() => setView('resume-builder')} className="hover:text-black">AI Optimizer</button>
+              <button onClick={() => setView('cover-letter')} className="hover:text-black">Cover Letter</button>
+              <button onClick={() => setView('applications')} className="hover:text-black">Tracker</button>
+              <button onClick={() => setView('interview-prep')} className="hover:text-black">Interview</button>
+              <button onClick={() => setView('company-insights')} className="hover:text-black">Companies</button>
+              <button onClick={() => setView('notifications')} className="hover:text-black relative">
+                <Bell size={18} />
+              </button>
+              <button onClick={() => setView('pricing')} className="px-4 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-bold hover:opacity-90">
+                Upgrade
+              </button>
+            </>
+          )}
+          
           <div className="w-[1px] h-4 bg-[#CBD0D2]" />
           
           {user ? (
@@ -1602,24 +1622,36 @@ const Navbar = ({ setView, currentView, user, onLogout }: { setView: (v: View) =
               </div>
             </div>
           )}
-          <button onClick={() => { setView('landing'); setMobileMenu(false); }} className="text-left">Home</button>
-          <button onClick={() => { setView('job-portal'); setMobileMenu(false); }} className="text-left">Job Matches</button>
-          <button onClick={() => { setView('resume-manager'); setMobileMenu(false); }} className="text-left">My Resumes</button>
-          <button onClick={() => { setView('resume-builder'); setMobileMenu(false); }} className="text-left">AI Optimizer</button>
-          <button onClick={() => { setView('cover-letter'); setMobileMenu(false); }} className="text-left">Cover Letter</button>
-          <button onClick={() => { setView('applications'); setMobileMenu(false); }} className="text-left">Tracker</button>
-          <button onClick={() => { setView('interview-prep'); setMobileMenu(false); }} className="text-left">Interview</button>
-          <button onClick={() => { setView('company-insights'); setMobileMenu(false); }} className="text-left">Companies</button>
-          <button onClick={() => { setView('notifications'); setMobileMenu(false); }} className="text-left flex items-center gap-2">
-            <Bell size={16} /> Notifications
-          </button>
-          <button onClick={() => { setView('pricing'); setMobileMenu(false); }} className="text-left flex items-center gap-2 text-emerald-600 font-bold">
-            ⭐ Upgrade to Pro
-          </button>
-          {user ? (
-            <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl">Sign Out</button>
-          ) : (
-            <button onClick={() => { setView('login'); setMobileMenu(false); }} className="w-full bg-black text-white py-4 rounded-xl">Login</button>
+          
+          {/* Not logged in - Overview links */}
+          {!user && (
+            <>
+              <button onClick={() => { setView('landing'); setMobileMenu(false); }} className="text-left">Home</button>
+              <a href="#features" onClick={() => setMobileMenu(false)} className="text-left">Features</a>
+              <a href="#how-it-works" onClick={() => setMobileMenu(false)} className="text-left">How It Works</a>
+              <button onClick={() => { setView('pricing'); setMobileMenu(false); }} className="text-left">Pricing</button>
+              <button onClick={() => { setView('login'); setMobileMenu(false); }} className="w-full bg-black text-white py-4 rounded-xl mt-4">Get Started Free</button>
+            </>
+          )}
+          
+          {/* Logged in - App features */}
+          {user && (
+            <>
+              <button onClick={() => { setView('job-portal'); setMobileMenu(false); }} className="text-left">Job Matches</button>
+              <button onClick={() => { setView('resume-manager'); setMobileMenu(false); }} className="text-left">My Resumes</button>
+              <button onClick={() => { setView('resume-builder'); setMobileMenu(false); }} className="text-left">AI Optimizer</button>
+              <button onClick={() => { setView('cover-letter'); setMobileMenu(false); }} className="text-left">Cover Letter</button>
+              <button onClick={() => { setView('applications'); setMobileMenu(false); }} className="text-left">Tracker</button>
+              <button onClick={() => { setView('interview-prep'); setMobileMenu(false); }} className="text-left">Interview</button>
+              <button onClick={() => { setView('company-insights'); setMobileMenu(false); }} className="text-left">Companies</button>
+              <button onClick={() => { setView('notifications'); setMobileMenu(false); }} className="text-left flex items-center gap-2">
+                <Bell size={16} /> Notifications
+              </button>
+              <button onClick={() => { setView('pricing'); setMobileMenu(false); }} className="text-left flex items-center gap-2 text-emerald-600 font-bold">
+                ⭐ Upgrade to Pro
+              </button>
+              <button onClick={() => { onLogout?.(); setMobileMenu(false); }} className="w-full bg-red-500 text-white py-4 rounded-xl mt-4">Sign Out</button>
+            </>
           )}
         </div>
       )}
@@ -5164,11 +5196,11 @@ const Hero = ({ setView }: { setView: (v: View) => void }) => {
           </p>
           <div className="flex flex-col sm:flex-row gap-6">
             <button onClick={() => setView('login')} className="btn-primary px-12 py-6 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-4 group rounded-2xl">
-              Get my match score
+              Start Free Trial
               <ArrowRight className="group-hover:translate-x-2 transition-transform" />
             </button>
-            <button onClick={() => setView('resume-builder')} className="border border-black px-12 py-6 text-sm font-black uppercase tracking-widest hover:bg-black hover:text-[#E9E1D1] transition-all rounded-2xl">
-              Build AI Resume
+            <button onClick={() => setView('pricing')} className="border border-black px-12 py-6 text-sm font-black uppercase tracking-widest hover:bg-black hover:text-[#E9E1D1] transition-all rounded-2xl">
+              View Pricing
             </button>
           </div>
         </div>
@@ -5200,6 +5232,64 @@ const Stats = () => (
     </div>
   </div>
 );
+
+const HowItWorks = ({ setView }: { setView: (v: View) => void }) => {
+  const steps = [
+    {
+      step: '01',
+      title: 'Sign Up & Upload Resume',
+      desc: 'Create your free account and upload your existing resume. Our LEKI AI agent will analyze it instantly.',
+      icon: <Upload size={28} />
+    },
+    {
+      step: '02',
+      title: 'AI Analysis & Optimization',
+      desc: 'Get a detailed ATS score, identify issues, and receive AI-powered suggestions to make your resume stand out.',
+      icon: <Sparkles size={28} />
+    },
+    {
+      step: '03',
+      title: 'Browse Real Job Matches',
+      desc: 'Access 50,000+ verified job listings from top companies in USA & India. No ghost jobs, only real opportunities.',
+      icon: <Search size={28} />
+    },
+    {
+      step: '04',
+      title: 'Apply with Confidence',
+      desc: 'Generate tailored resumes & cover letters for each job. Track applications and prepare for interviews.',
+      icon: <Rocket size={28} />
+    }
+  ];
+
+  return (
+    <section id="how-it-works" className="py-32 bg-[#E9E1D1]">
+      <div className="site-container">
+        <div className="text-center mb-20 space-y-6">
+          <h2 className="text-5xl lg:text-6xl font-heading">How It Works</h2>
+          <p className="text-xl text-[#3B4235] max-w-2xl mx-auto">From resume upload to job offer - our AI handles the heavy lifting.</p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {steps.map((item, i) => (
+            <div key={i} className="bg-white p-10 hover:shadow-xl transition-all group fade-in-section" style={{animationDelay: `${i * 0.15}s`}}>
+              <div className="text-5xl font-heading text-[#CBD0D2] mb-6">{item.step}</div>
+              <div className="w-14 h-14 bg-black text-white flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+              <p className="text-[#3B4235] leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-16">
+          <button onClick={() => setView('login')} className="btn-primary px-16 py-6 text-sm font-black uppercase tracking-widest inline-flex items-center gap-4 rounded-2xl group">
+            Get Started Now
+            <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 const FeatureCards = () => {
   const cards = [
@@ -6487,6 +6577,9 @@ export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Protected views that require login
+  const protectedViews: View[] = ['job-portal', 'resume-manager', 'resume-builder', 'cover-letter', 'applications', 'interview-prep', 'company-insights', 'notifications'];
+
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthChange((firebaseUser) => {
@@ -6495,6 +6588,13 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Protect routes - redirect to login if trying to access protected views without auth
+  useEffect(() => {
+    if (!authLoading && !user && protectedViews.includes(view)) {
+      setView('login');
+    }
+  }, [view, user, authLoading]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -6513,6 +6613,7 @@ export default function App() {
         <>
           <Hero setView={setView} />
           <Stats />
+          <HowItWorks setView={setView} />
           <FeatureCards />
           <Testimonials />
           <FAQ />
