@@ -82,15 +82,37 @@ import {
 import { searchJobs, RealJob, JOB_CATEGORIES, hasJobApiKey, setJobApiKey } from './jobSearch';
 
 // --- AI Service Initialization ---
-let ai: InstanceType<typeof GoogleGenAI> | null = null;
-try {
-  const apiKey = process.env.API_KEY || '';
-  if (apiKey) {
-    ai = new GoogleGenAI({ apiKey });
+// Get Gemini API key from env or localStorage
+const getGeminiApiKey = (): string => {
+  const storedKey = typeof window !== 'undefined' ? localStorage.getItem('gemini_api_key') : null;
+  if (storedKey) return storedKey;
+  return process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+};
+
+const setGeminiApiKey = (key: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('gemini_api_key', key);
   }
-} catch (e) {
-  console.warn('AI service initialization failed:', e);
-}
+};
+
+const hasGeminiApiKey = (): boolean => {
+  return !!getGeminiApiKey();
+};
+
+let ai: InstanceType<typeof GoogleGenAI> | null = null;
+const initAI = () => {
+  try {
+    const apiKey = getGeminiApiKey();
+    if (apiKey) {
+      ai = new GoogleGenAI({ apiKey });
+      return true;
+    }
+  } catch (e) {
+    console.warn('AI service initialization failed:', e);
+  }
+  return false;
+};
+initAI();
 
 // --- LEKI Agent System Prompt ---
 const LEKI_SYSTEM_PROMPT = `### ROLE & OBJECTIVE
@@ -1933,6 +1955,17 @@ const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: Fireb
   const [selectedRealJob, setSelectedRealJob] = useState<RealJob | null>(null);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showGeminiKeyModal, setShowGeminiKeyModal] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState('');
+
+  const handleSaveGeminiKey = () => {
+    if (geminiKeyInput.trim()) {
+      setGeminiApiKey(geminiKeyInput.trim());
+      initAI();
+      setShowGeminiKeyModal(false);
+      setGeminiKeyInput('');
+    }
+  };
   
   const fetchRealJobs = async (query?: string, location?: string) => {
     if (!hasJobApiKey()) {
@@ -1992,7 +2025,7 @@ const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: Fireb
 
   const analyzeExternalJob = async (job: ExternalJob) => {
     if (!ai) {
-      alert('AI service not configured. Please add your GEMINI_API_KEY to .env file and restart the server.');
+      setShowGeminiKeyModal(true);
       return;
     }
 
@@ -2103,7 +2136,7 @@ For customResume: Generate a well-formatted professional resume template optimiz
     const prompt = directPrompt || chatInput;
     if (!prompt) return;
     if (!ai) {
-      setAiResponse("AI service not configured. Please add your GEMINI_API_KEY to .env file.");
+      setShowGeminiKeyModal(true);
       return;
     }
     setIsAiLoading(true);
@@ -2180,6 +2213,44 @@ For customResume: Generate a well-formatted professional resume template optimiz
           <div className="flex gap-3">
             <button onClick={() => setShowApiKeyModal(false)} className="flex-1 py-3 border rounded-xl font-bold">Cancel</button>
             <button onClick={handleSaveApiKey} className="flex-1 py-3 bg-black text-white rounded-xl font-bold">Save Key</button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Gemini API Key Modal */}
+    {showGeminiKeyModal && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold flex items-center gap-2"><Sparkles size={20} className="text-emerald-500" /> Add AI API Key</h2>
+            <button onClick={() => setShowGeminiKeyModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <X size={20} />
+            </button>
+          </div>
+          <p className="text-gray-600 text-sm mb-4">
+            To use LEKI AI features (resume analysis, cover letters, interview prep), you need a free Google Gemini API key.
+          </p>
+          <ol className="text-sm text-gray-600 mb-4 space-y-2">
+            <li>1. Go to <a href="https://aistudio.google.com/apikey" target="_blank" className="text-blue-600 underline">Google AI Studio</a></li>
+            <li>2. Click "Create API Key"</li>
+            <li>3. Copy your API key</li>
+          </ol>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+            <p className="text-xs text-amber-800">
+              <strong>Free tier:</strong> 60 requests/minute, 1500 requests/day
+            </p>
+          </div>
+          <input
+            type="password"
+            value={geminiKeyInput}
+            onChange={(e) => setGeminiKeyInput(e.target.value)}
+            placeholder="Paste your Gemini API key here"
+            className="w-full px-4 py-3 border rounded-xl focus:border-emerald-500 outline-none mb-4"
+          />
+          <div className="flex gap-3">
+            <button onClick={() => setShowGeminiKeyModal(false)} className="flex-1 py-3 border rounded-xl font-bold">Cancel</button>
+            <button onClick={handleSaveGeminiKey} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl font-bold">Save Key</button>
           </div>
         </div>
       </div>
