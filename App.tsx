@@ -1751,83 +1751,8 @@ For customResume: Generate a well-formatted professional resume template optimiz
     }
   };
 
-  const mockJobs: Job[] = [
-    {
-      id: '1',
-      company: 'Mochi Health',
-      role: 'Software Engineer (Fullstack)',
-      location: 'San Francisco, CA',
-      salary: '$140K - $180K',
-      type: 'Full-time',
-      experience: '1+ years exp',
-      matchScore: 98,
-      matchLevel: 'STRONG MATCH',
-      verified: true,
-      postedAt: '4 hours ago',
-      applicants: 200,
-      tags: ['Health Care', 'Growth Stage']
-    },
-    {
-      id: '2',
-      company: 'SemiAnalysis',
-      role: 'Site Reliability Engineer - GPU Cloud',
-      location: 'United States',
-      salary: '$120K - $160K',
-      type: 'Full-time',
-      experience: '1+ years exp',
-      matchScore: 79,
-      matchLevel: 'GOOD MATCH',
-      verified: true,
-      postedAt: '3 days ago',
-      applicants: 84,
-      tags: ['AI', 'Consulting', 'Early Stage']
-    },
-    {
-      id: '3',
-      company: 'SemiAnalysis',
-      role: 'Software Engineer - GPU Cloud',
-      location: 'United States',
-      salary: '$130K - $170K',
-      type: 'Full-time',
-      experience: '1+ years exp',
-      matchScore: 79,
-      matchLevel: 'GOOD MATCH',
-      verified: true,
-      postedAt: '2 days ago',
-      applicants: 112,
-      tags: ['AI', 'Infrastructure']
-    },
-    {
-      id: '4',
-      company: 'GrowthX',
-      role: 'Growth Marketing Intern',
-      location: 'Bangalore, IN',
-      salary: '₹40K - ₹60K',
-      type: 'Internship',
-      experience: 'Fresh Grad',
-      matchScore: 88,
-      matchLevel: 'STRONG MATCH',
-      verified: false,
-      postedAt: '1 day ago',
-      applicants: 450,
-      tags: ['Marketing', 'B2B']
-    },
-    {
-      id: '5',
-      company: 'DevSquad',
-      role: 'Remote Backend Contractor',
-      location: 'Remote',
-      salary: '$80 - $120/hr',
-      type: 'Contract',
-      experience: '3+ years exp',
-      matchScore: 82,
-      matchLevel: 'GOOD MATCH',
-      verified: true,
-      postedAt: '12 hours ago',
-      applicants: 24,
-      tags: ['Node.js', 'AWS']
-    }
-  ];
+  // Sample jobs removed - use Real Jobs tab for actual listings
+  const mockJobs: Job[] = [];
 
   const filteredJobs = useMemo(() => {
     return mockJobs.filter(job => {
@@ -2040,24 +1965,17 @@ For customResume: Generate a well-formatted professional resume template optimiz
 
         <nav className="space-y-1">
           <SidebarItem icon={Briefcase} label="Jobs" active />
-          <SidebarItem icon={FileText} label="Resume" badge="✓" onClick={() => setView('resume-manager')} />
-          <SidebarItem icon={User} label="Profile" />
-          <SidebarItem icon={Zap} label="Agent" badge="Beta" />
-          <SidebarItem icon={MessageSquare} label="Coaching" badge="NEW" />
+          <SidebarItem icon={FileText} label="Resume" onClick={() => setView('resume-manager')} />
+          <SidebarItem icon={Target} label="Tracker" onClick={() => setView('applications')} />
+          <SidebarItem icon={MessageSquare} label="Interview" onClick={() => setView('interview-prep')} />
+          <SidebarItem icon={Briefcase} label="Companies" onClick={() => setView('company-insights')} />
         </nav>
 
         <div className="mt-auto space-y-6">
-          <div className="bg-white/40 p-5 rounded-3xl border border-[#CBD0D2] group cursor-pointer hover:bg-white/60 transition-all">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[10px] font-black uppercase text-[#3B4235] tracking-widest">Refer & Earn</span>
-              <ChevronRight size={14} className="text-[#3B4235]" />
-            </div>
-            <p className="text-[11px] text-[#3B4235]/60 font-medium leading-relaxed">Invite friends or share on LinkedIn to earn extra rewards!</p>
-          </div>
           <div className="space-y-1">
-            <SidebarItem icon={Mail} label="Messages" />
-            <SidebarItem icon={HelpCircle} label="Feedback" />
-            <SidebarItem icon={Settings} label="Settings" />
+            <SidebarItem icon={Bell} label="Notifications" onClick={() => setView('notifications')} />
+            <SidebarItem icon={FileText} label="Cover Letter" onClick={() => setView('cover-letter')} />
+            <SidebarItem icon={Settings} label="AI Optimizer" onClick={() => setView('resume-builder')} />
           </div>
         </div>
       </aside>
@@ -2348,8 +2266,25 @@ For customResume: Generate a well-formatted professional resume template optimiz
             </div>
           )}
 
+          {/* Recommended Tab - Direct to Real Jobs */}
+          {activeTab === 'Recommended' && filteredJobs.length === 0 && (
+            <div className="bg-white rounded-2xl border border-[#CBD0D2] p-12 text-center">
+              <Briefcase size={48} className="mx-auto mb-4 text-gray-300" />
+              <h3 className="text-xl font-bold mb-2">Use Real Jobs Tab</h3>
+              <p className="text-gray-500 mb-6">
+                Click on "Real Jobs" tab to search for actual job listings from LinkedIn, Indeed, and more!
+              </p>
+              <button
+                onClick={() => setActiveTab('Real Jobs')}
+                className="px-8 py-4 bg-black text-white rounded-xl font-bold flex items-center gap-2 mx-auto hover:bg-[#3B4235]"
+              >
+                <Search size={18} /> Search Real Jobs
+              </button>
+            </div>
+          )}
+
           {/* Recommended/Liked/Applied Jobs */}
-          {activeTab !== 'External' && filteredJobs.length > 0 ? filteredJobs.map((job) => (
+          {activeTab !== 'External' && activeTab !== 'Real Jobs' && filteredJobs.length > 0 ? filteredJobs.map((job) => (
             <div key={job.id} className="bg-white rounded-[2.5rem] border border-[#CBD0D2] overflow-hidden flex shadow-sm hover:shadow-xl transition-all">
               <div className="flex-1 p-10">
                 <div className="flex items-start gap-8 mb-10">
