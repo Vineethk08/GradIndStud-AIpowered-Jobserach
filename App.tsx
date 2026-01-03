@@ -1625,7 +1625,7 @@ const JobPortal = ({ setView, user }: { setView: (v: View) => void; user?: Fireb
   const [realJobs, setRealJobs] = useState<RealJob[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [jobSearchQuery, setJobSearchQuery] = useState('software engineer');
-  const [jobSearchLocation, setJobSearchLocation] = useState('India');
+  const [jobSearchLocation, setJobSearchLocation] = useState('USA');
   const [selectedRealJob, setSelectedRealJob] = useState<RealJob | null>(null);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -2051,9 +2051,45 @@ For customResume: Generate a well-formatted professional resume template optimiz
               </button>
             </div>
 
+            {/* Location Presets */}
+            <div className="border-t pt-4">
+              <p className="text-xs font-bold text-gray-500 mb-3">📍 Locations:</p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { name: '🇺🇸 USA', loc: 'USA' },
+                  { name: '🌐 Remote', loc: 'Remote' },
+                  { name: '🗽 New York', loc: 'New York' },
+                  { name: '🌉 San Francisco', loc: 'San Francisco' },
+                  { name: '💻 Seattle', loc: 'Seattle' },
+                  { name: '☀️ Austin', loc: 'Austin' },
+                  { name: '🎬 Los Angeles', loc: 'Los Angeles' },
+                  { name: '🏛️ Boston', loc: 'Boston' },
+                  { name: '🌴 Miami', loc: 'Miami' },
+                  { name: '🎰 Denver', loc: 'Denver' },
+                  { name: '🇮🇳 India', loc: 'India' },
+                  { name: '🏙️ Bangalore', loc: 'Bangalore' }
+                ].map((location) => (
+                  <button
+                    key={location.name}
+                    onClick={() => {
+                      setJobSearchLocation(location.loc);
+                      fetchRealJobs(undefined, location.loc);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      jobSearchLocation === location.loc
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-50 hover:bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {location.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Role Categories */}
             <div className="border-t pt-4">
-              <p className="text-xs font-bold text-gray-500 mb-3">Popular Roles:</p>
+              <p className="text-xs font-bold text-gray-500 mb-3">💼 Job Roles:</p>
               <div className="flex flex-wrap gap-2">
                 {[
                   { name: 'Software Engineer', query: 'software engineer' },
