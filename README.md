@@ -71,7 +71,7 @@ Get your free API key: https://aistudio.google.com/app/apikey
 
 ## 📄 License
 
-MIT License - Built with ❤️ for Indian Students
+MIT License - Built with ❤️ for  Students
 
 ---
 
