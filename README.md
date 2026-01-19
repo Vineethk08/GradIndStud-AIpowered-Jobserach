@@ -1,5 +1,5 @@
-# GradIndStud 🇮🇳
-## AI-Powered Job Search Portal for Indian Students
+# GradIndStud 
+## AI-Powered Job Search Portal for Students and Professionals
 
 ### 🌐 Live URL
 **https://gradindstud-aipowered-jobserach-457608791836.europe-west1.run.app**
